@@ -14,6 +14,7 @@
 #include <TCutG.h>
 #include "TFitResult.h"
 #include "TLegend.h"
+#include "/Users/mbp-cdm-01/Desktop/AssegnoRicerca/Run3Analyses/OmegavsMult/Constants.h"
 
 void StyleCanvas(TCanvas *canvas, Float_t LMargin, Float_t RMargin, Float_t TMargin, Float_t BMargin)
 {
@@ -31,21 +32,6 @@ void StyleCanvas(TCanvas *canvas, Float_t LMargin, Float_t RMargin, Float_t TMar
   // gStyle->SetPalette(55, 0);
 }
 
-/// @brief
-/// @param histo
-/// @param Low
-/// @param Up
-/// @param color
-/// @param style
-/// @param titleX
-/// @param titleY
-/// @param title
-/// @param XRange
-/// @param XLow
-/// @param XUp
-/// @param xOffset
-/// @param yOffset
-/// @param mSize
 void StyleHisto(TH1F *histo, Float_t Low, Float_t Up, Int_t color, Int_t style, TString titleX,
                 TString titleY, TString title, Bool_t XRange, Float_t XLow, Float_t XUp, Float_t xOffset, Float_t yOffset, Float_t mSize)
 {
@@ -125,7 +111,6 @@ Double_t fretta(Double_t *x, Double_t *par)
 TString titlePt = "p_{T} (GeV/c)";
 TString titleYield = "1/N_{ev} dN/dp_{T}";
 
-const Int_t numPart = 7;
 TString TitleInvMass[numPart] = {"(#pi^{+}, #pi^{-}) invariant mass (GeV/#it{c}^{2})", "(p, #pi^{-}) invariant mass (GeV/#it{c}^{2})", "(#bar{p}, #pi^{-}) invariant mass (GeV/#it{c}^{2})", "(#Lambda, #pi^{-}) invariant mass (GeV/#it{c}^{2})"};
 TString namehisto[numPart] = {"h3dMassK0Short", "", "", "hCascMinusInvMassvsPt", "hCascPlusInvMassvsPt", "hCascMinusInvMassvsPt", "hCascPlusInvMassvsPt"};
 Float_t LowLimitMass[numPart] = {0.42, 1.09, 1.09, 1.29, 1.29, 1.61, 1.61}; // 0.44
@@ -141,22 +126,25 @@ Float_t liminf[numPart] = {0.45, 1.1153, 1.1153, 1.29, 1.29, 1.63, 1.63}; // est
 Float_t limsup[numPart] = {0.545, 1.1168, 1.1168, 1.35, 1.35, 1.71, 1.71};
 // in the past (before LHC22m_pass3) they were: 1.3 and 1.342
 
-const Float_t massParticle[numPart] = {0.497611, 1.115683, 1.115683, 1.32171, 1.32171, 1.67245, 1.67245};
-TString Spart[numPart] = {"K0s", "Lambda", "AntiLambda", "XiNeg", "XiPos", "OmegaNeg", "OmegaPlus"};
-TString SpartType[numPart] = {"K0s", "Lambda", "Lambda", "Xi", "Xi", "Omega", "Omega"};
-TString IsOneOrTwoGauss[2] = {"_OneGaussFit", ""};
-
-void YieldsvsPt(Int_t part = 3,
+void YieldsvsPt(Int_t part = 5,
+                Int_t MultType = 0, // 0: no mult for backward compatibility, 1: FT0M, 2: FV0M
+                Bool_t isMB = 1,
+                Int_t mul = 0,
                 TString year = "LHC22r_pass3_Train67853",
-                TString SPathIn = "InputFiles/LHC22r_pass3/AnalysisResults_Omega.root",
-                TString SPathInEvt = "InputFiles/LHC22r_pass3/AnalysisResultsEvts_cascqa_LHC22r_pass3_Train67853.root",
-                TString OutputDir = "",
+                TString SPathIn = "OutputFilesCascPPTask/LHC22r_pass3/AnalysisResults_Omega.root",
+                TString SPathInEvt = "AnalysisResultsCascQATask/LHC22r_pass3/AnalysisResultsEvts_cascqa_LHC22r_pass3_Train67853.root",
+                TString OutputDir = "Yields",
                 Bool_t UseTwoGauss = 0,
                 Bool_t isBkgParab = 0,
                 Bool_t isMeanFixedPDG = 0,
                 Float_t sigmacentral = 3)
 {
 
+  if (mul > numMult)
+  {
+    cout << "Multiplciity out of range" << endl;
+    return;
+  }
   if (part < 3)
   {
     cout << "this value of part is not specified, choose 3 - 4 (Xi) or 5 - 6  (Omega) " << endl;
@@ -180,9 +168,12 @@ void YieldsvsPt(Int_t part = 3,
   TDirectoryFile *dir;
   TDirectoryFile *dirEvt;
   TDirectoryFile *dirCasc;
+  TH3F *h3;
   TH2F *h2;
   TH2F *h2Bis;
   TH1F *hEvents;
+  Int_t MultLowBin = 0;
+  Int_t MultUpBin = 0;
 
   dir = (TFile *)filein->Get("lf-cascpostprocessing");
   if (!dir)
@@ -191,11 +182,38 @@ void YieldsvsPt(Int_t part = 3,
     return;
   }
 
-  h2 = (TH2F *)dir->Get(namehisto[part]);
-  if (!h2)
+  if (MultType == 0)
   {
-    cout << "h2 cascade not avilable " << endl;
-    return;
+    h2 = (TH2F *)dir->Get(namehisto[part]);
+    if (!h2)
+    {
+      cout << "h2 cascade not avilable " << endl;
+      return;
+    }
+  }
+  else
+  {
+    if (MultType == 1)
+      h3 = (TH3F *)dir->Get(namehisto[part] + "_FT0M");
+    else if (MultType == 2)
+      h3 = (TH3F *)dir->Get(namehisto[part] + "_FV0A");
+    if (!h3)
+    {
+      cout << "h3 cascade not avilable " << endl;
+      return;
+    }
+    if (isMB)
+    {
+      MultLowBin = h3->GetXaxis()->FindBin(100 + 0.001);
+      MultUpBin = h3->GetXaxis()->FindBin(100 - 0.001);
+    }
+    else
+    {
+      MultLowBin = h3->GetXaxis()->FindBin(MultiplicityPerc[mul] + 0.001);
+      MultUpBin = h3->GetXaxis()->FindBin(MultiplicityPerc[mul + 1] - 0.001);
+    }
+    h3->GetXaxis()->SetRange(MultLowBin, MultUpBin);
+    h2 = (TH2F *)h3->Project3D("zyoe");
   }
 
   Double_t NEvents = 0;
@@ -761,8 +779,12 @@ void YieldsvsPt(Int_t part = 3,
   histoYield->Draw("same");
 
   TString Soutputfile;
-  Soutputfile = OutputDir + "Yields_" + Spart[part] + "_" + year;
+  Soutputfile = OutputDir + "/Yields_" + Spart[part] + "_" + year;
   Soutputfile += IsOneOrTwoGauss[UseTwoGauss];
+  if (isMB)
+    Soutputfile += "_Mult0-100";
+  else
+    Soutputfile += Form("_Mult%i-%i", MultiplicityPerc[mul], MultiplicityPerc[mul + 1]);
 
   // save canvases
   canvas[0]->SaveAs(Soutputfile + ".pdf(");
@@ -778,7 +800,7 @@ void YieldsvsPt(Int_t part = 3,
   outputfile->WriteTObject(histoSigma);
   outputfile->WriteTObject(histoPurity);
   outputfile->Close();
-  cout << "Ho creato il file: " << Soutputfile << endl;
+  cout << "Ho creato il file: " << Soutputfile << ".root" << endl;
 
   cout << "Total raw yield (signal only) " << TotYield << endl;
   cout << "Total raw yield (signal+bkg within 3sigmas) " << TotSigBkg << endl;

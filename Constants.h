@@ -3,9 +3,11 @@ const Int_t numPart = 7; // number of particles
 const Int_t numFiles = 8;
 const Int_t numTopoVar = 10;
 const Int_t numChoice = 5; //mean, sigma, purity, yield, significance
+const Int_t numParticles = 3; //part, apart, sum
 
 Int_t MultiplicityPerc[numMult + 1] = {0, 10, 20, 40, 60, 100};
 Int_t Color[] = {634, 628, 797,815,418, 429, 867,601,1};
+Int_t ColorPart[] = {634, kBlue+2};
 
 const Float_t massParticle[numPart] = {0.497611, 1.115683, 1.115683, 1.32171, 1.32171, 1.67245, 1.67245};
 TString Spart[numPart] = {"K0s", "Lambda", "AntiLambda", "XiNeg", "XiPos", "OmegaNeg", "OmegaPos"};

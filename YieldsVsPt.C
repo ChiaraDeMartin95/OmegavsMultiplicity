@@ -70,8 +70,8 @@ Double_t fparab(Double_t *x, Double_t *par)
   }
   else if (par[2] == 5 || par[2] == 6)
   {
-    LimInf = 1.65; // was 658
-    LimSup = 1.69; // was 68
+    LimInf = 1.66;
+    LimSup = 1.682;
   }
   if (reject && x[0] > LimInf && x[0] < LimSup)
   {
@@ -97,8 +97,8 @@ Double_t fretta(Double_t *x, Double_t *par)
   }
   else if (par[2] == 5 || par[2] == 6)
   {
-    LimInf = 1.65;
-    LimSup = 1.69;
+    LimInf = 1.66;  // 1.65
+    LimSup = 1.682; // 1.69
   }
   if (reject && x[0] > LimInf && x[0] < LimSup)
   {
@@ -124,15 +124,21 @@ Float_t min_histo[numPart] = {0.42, 1.09, 1.09, 1.29, 1.29, 1.62, 1.62}; // estr
 Float_t max_histo[numPart] = {0.57, 1.14, 1.14, 1.35, 1.35, 1.72, 1.72};
 Float_t liminf[numPart] = {0.45, 1.1153, 1.1153, 1.29, 1.29, 1.63, 1.63}; // estremi regione fit del bkg e total
 Float_t limsup[numPart] = {0.545, 1.1168, 1.1168, 1.35, 1.35, 1.71, 1.71};
-// in the past (before LHC22m_pass3) they were: 1.3 and 1.342
 
-void YieldsvsPt(Int_t part = 5,
+// histogram limits
+// Omega 22o_pass3: 1.62-1.72
+// Omega 22m_pass4: 1.64 - 1.69
+
+void YieldsVsPt(Bool_t isSysStudy = 1,
+                TString SysPath = "",
+                Int_t part = 5,
+                Int_t MassRebin = 2,
                 Int_t MultType = 0, // 0: no mult for backward compatibility, 1: FT0M, 2: FV0M
                 Bool_t isMB = 1,
                 Int_t mul = 0,
-                TString year = "LHC22r_pass3_Train67853",
-                TString SPathIn = "OutputFilesCascPPTask/LHC22r_pass3/AnalysisResults_Omega.root",
-                TString SPathInEvt = "AnalysisResultsCascQATask/LHC22r_pass3/AnalysisResultsEvts_cascqa_LHC22r_pass3_Train67853.root",
+                TString year = "LHC22m_pass4_Train79153" /*"LHC22o_pass3_Train75538" /*"LHC22r_pass3_Train67853"*/,
+                TString SPathIn = "OutputFilesCascPPTask/LHC22m_pass4/AnalysisResults",
+                TString SPathInEvt = "AnalysisResultsCascQATask/LHC22m_pass4/AnalysisResultsEvts",
                 TString OutputDir = "Yields",
                 Bool_t UseTwoGauss = 0,
                 Bool_t isBkgParab = 0,
@@ -150,7 +156,21 @@ void YieldsvsPt(Int_t part = 5,
     cout << "this value of part is not specified, choose 3 - 4 (Xi) or 5 - 6  (Omega) " << endl;
     return;
   }
+  if (part == 5 || part == 6)
+  { // Omega
+    if (year == "LHC22m_pass4_Train79153")
+    {
+      LowLimitMass[part] = 1.63;
+      UpLimitMass[part] = 1.71;
+    }
+  }
 
+  SPathIn += "_" + year + "_" + SpartType[part];
+  if (isSysStudy)
+    SPathIn += SysPath;
+  SPathIn += ".root";
+
+  SPathInEvt += "_" + year + ".root";
   TFile *filein = new TFile(SPathIn, "");
   if (!filein)
   {
@@ -179,6 +199,13 @@ void YieldsvsPt(Int_t part = 5,
   if (!dir)
   {
     cout << "dir not available" << endl;
+    return;
+  }
+
+  TH1F *histoCandidateSelections = (TH1F *)dir->Get("CascadeSelectionSummary");
+  if (!histoCandidateSelections)
+  {
+    cout << "histoCandidateSelections not found" << endl;
     return;
   }
 
@@ -227,26 +254,46 @@ void YieldsvsPt(Int_t part = 5,
   NEvents = hEvents->GetBinContent(1);
   cout << "NEvents" << NEvents << endl;
 
-  const Int_t numPt = 23;
+  const Int_t numPt = 19; // 19; // 23;
 
   // Xi
   //  Float_t binpt[numPt + 1] = {0.4, 0.6, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0, 2.5, 3, 4}; // 10
   //  Float_t binpt[numPt + 1] = {0.4, 0.6, 0.8, 1.0, 1.2, 1.6, 2.0};
   // Float_t binpt[numPt + 1] = {0.6, 1.0, 1.2, 1.5, 1.8, 2.1, 2.4, 2.7, 3.0, 4.0};
-  Float_t binpt[numPt + 1] = {0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0,
-                              1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0,
-                              2.2, 2.6, 3.0, 3.5, 4.0, 4.5, 5.0};
 
-  // Omega
   // Float_t binpt[numPt + 1] = {0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0,
-  //                          1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0,
-  //                          2.2, 2.6, 3.0, 3.5, 4.0, 4.5, 5.0};
+  // 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0,
+  // 2.2, 2.6, 3.0, 3.5, 4.0, 4.5, 5.0};
+
+  // Omega 22o_pass3
+  // Float_t binpt[numPt + 1] = {0.4, 0.6, 0.8, 1.0,
+  //                          1.2, 1.4, 1.6, 1.8, 2.0,
+  //                          2.5, 3.5, 5.0};
+
+  // Omega 22m_pass4
+  // Float_t binpt[numPt + 1] = {0.4, 0.6, 0.8, 1.0, 1.1,
+  //                          1.2, 1.3, 1.4, 1.5, 1.6,
+  //                        1.7, 1.8, 1.9, 2.0, 2.1,
+  //                      2.2, 2.3, 2.4, 2.5, 2.7,
+  //                    2.9, 3.1, 3.3, 3.5, 4.0,
+  //                  4.5, 5.0, 6.0, 8.0};
+  // 28
+
+  // 19
+  Float_t binpt[numPt + 1] = {0.4, 0.6, 0.8, 1.0,
+                              1.2, 1.4, 1.6, 1.85, 2.0,
+                              2.2, 2.4, 2.6, 2.8, 3.0,
+                              3.5, 4.0, 4.5, 5.0, 6.0, 8.0};
+
+  // Float_t binpt[numPt + 1] = {0.4, 0.8,
+  //                           1.2, 1.6, 2.0,
+  //                         2.4, 2.8, 3.2, 4.0, 5.0, 6.0, 8.0};
 
   TString SPt[numPt] = {""};
   TH1F *hInvMass[numPt];
 
-  TCanvas *canvas[3];
-  for (Int_t c = 0; c < 3; c++)
+  TCanvas *canvas[4];
+  for (Int_t c = 0; c < 4; c++)
   {
     canvas[c] = new TCanvas(Form("canvas_%i", c), Form("canvas%i", c), 1800, 1400);
     canvas[c]->Divide(3, 3);
@@ -258,6 +305,7 @@ void YieldsvsPt(Int_t part = 5,
   TH1F *histoSigma = new TH1F("histoSigma", "histoSigma", numPt, binpt);
   TH1F *histoPurity = new TH1F("histoPurity", "histoPurity", numPt, binpt);
   TH1F *histoYield = new TH1F("histoYield", "histoYield", numPt, binpt);
+  TH1F *histoSignificance = new TH1F("histoSignificance", "histoSignificance", numPt, binpt);
 
   Float_t counts = 0;
   Float_t errcount = 0;
@@ -265,23 +313,26 @@ void YieldsvsPt(Int_t part = 5,
   {
     if (part == 5 || part == 6)
     {
-      if (binpt[pt] < 0.65)
+      if (binpt[pt] < 0.6)
         continue;
-      if (binpt[pt] > 4)
-        continue;
+      // if (binpt[pt] > 4)
+      // continue;
     }
     SPt[pt] = Form("%.1f < p_{T} < %.1f", binpt[pt], binpt[pt + 1]);
+    cout << "Analysed pt interval: " << binpt[pt] << "-" << binpt[pt + 1] << endl;
     cout << binpt[pt] << endl;
 
     hInvMass[pt] = (TH1F *)h2->ProjectionY(Form("hInvMass_pt%i", pt), h2->GetXaxis()->FindBin(binpt[pt] + 0.001), h2->GetXaxis()->FindBin(binpt[pt + 1] - 0.001));
-    hInvMass[pt]->Rebin(4);
-    StyleHisto(hInvMass[pt], 0, 1.2 * hInvMass[pt]->GetBinContent(hInvMass[pt]->GetMaximumBin()), 1, 20, TitleInvMass[part], "Counts", SPt[pt], 1, LowLimitMass[part], UpLimitMass[part], 1.4, 1.4, 1.2);
+    hInvMass[pt]->Rebin(MassRebin);
+    StyleHisto(hInvMass[pt], 0, 1.2 * hInvMass[pt]->GetBinContent(hInvMass[pt]->GetMaximumBin()), 1, 20, TitleInvMass[part], "Counts", SPt[pt], 1, LowLimitMass[part], UpLimitMass[part], 1.4, 1.4, 0.7);
     if (pt < 9)
       canvas[0]->cd(pt + 1);
     else if (pt < 18)
       canvas[1]->cd(pt + 1 - 9);
-    else
+    else if (pt < 27)
       canvas[2]->cd(pt + 1 - 18);
+    else
+      canvas[3]->cd(pt + 1 - 27);
     gPad->SetTopMargin(0.08);
     gPad->SetLeftMargin(0.15);
     gPad->SetRightMargin(0.1);
@@ -337,10 +388,43 @@ void YieldsvsPt(Int_t part = 5,
   for (Int_t pt = 0; pt < numPt; pt++)
   {
     if (part == 5 || part == 6)
+    { // Omega
+      if (year == "LHC22m_pass4_Train79153")
+      {
+        min_histo[part] = 1.645; // estremi del range visualizzazione bkg
+        max_histo[part] = 1.695;
+        liminf[part] = 1.645; // estremi regione fit del bkg e total
+        limsup[part] = 1.695;
+        if (binpt[pt] > 2)
+        {
+          min_histo[part] = 1.64;
+          liminf[part] = 1.64;
+          max_histo[part] = 1.7;
+          limsup[part] = 1.7;
+        }
+        UpLimitMass[part] = 1.71;
+        if (binpt[pt] < 1.2)
+        {
+          min_histo[part] = 1.635;
+          liminf[part] = 1.635;
+          max_histo[part] = 1.7;
+          limsup[part] = 1.7;
+        }
+        // retta or pol2
+        if (binpt[pt] < 1. || binpt[pt] > 4.)
+          isBkgParab = 0;
+        else
+          isBkgParab = 1;
+        if (part==6) {
+          //if (binpt[pt] == 1.4 || binpt[pt] == 2. || binpt[pt] == 2.2) isBkgParab = 0;
+          if (binpt[pt] >= 1.99 && binpt[pt] <= 2.21) isBkgParab = 0;
+          if (binpt[pt] >= 1.39 && binpt[pt] <= 1.41) isBkgParab = 0;
+        }  
+      }
+    }
+    if (part == 5 || part == 6)
     {
-      if (binpt[pt] < 0.65)
-        continue;
-      if (binpt[pt] > 4)
+      if (binpt[pt] < 0.6)
         continue;
     }
     // special settings
@@ -361,8 +445,10 @@ void YieldsvsPt(Int_t part = 5,
       canvas[0]->cd(pt + 1);
     else if (pt < 18)
       canvas[1]->cd(pt + 1 - 9);
-    else
+    else if (pt < 27)
       canvas[2]->cd(pt + 1 - 18);
+    else
+      canvas[3]->cd(pt + 1 - 27);
 
     functionsFirst[pt] = new TF1(Form("1f_%i", pt), "gaus", min_range_signal[part], max_range_signal[part]);
     functionsFirst[pt]->SetLineColor(881);
@@ -413,7 +499,7 @@ void YieldsvsPt(Int_t part = 5,
     if (UseTwoGauss)
     {
       cout << "\n\e[35mFit with two gauss \e[39m"
-           << " Pt: " << pt << endl;
+           << " Pt: " << binpt[pt] << "-" << binpt[pt + 1] << endl;
 
       if (isBkgParab)
         total[pt] = new TF1(Form("total%i", pt), "gaus(0)+gaus(3)+pol2(6)", liminf[part], limsup[part]);
@@ -557,8 +643,10 @@ void YieldsvsPt(Int_t part = 5,
           canvas[0]->cd(pt + 1);
         else if (pt < 18)
           canvas[1]->cd(pt + 1 - 9);
-        else
+        else if (pt < 27)
           canvas[2]->cd(pt + 1 - 18);
+        else
+          canvas[3]->cd(pt + 1 - 27);
         functions1[pt]->Draw("same");
         functions2[pt]->Draw("same");
         if (isBkgParab)
@@ -578,7 +666,7 @@ void YieldsvsPt(Int_t part = 5,
     if (!UseTwoGauss)
     {
       cout << "\n\e[36mFit with one gauss only: \e[39m"
-           << " Pt: " << pt << endl;
+           << " Pt: " << binpt[pt] << "-" << binpt[pt + 1] << endl;
 
       if (isBkgParab)
         total[pt] = new TF1(Form("total%i", pt), "gaus(0)+pol2(3)", liminf[part], limsup[part]);
@@ -678,8 +766,10 @@ void YieldsvsPt(Int_t part = 5,
         canvas[0]->cd(pt + 1);
       else if (pt < 18)
         canvas[1]->cd(pt + 1 - 9);
-      else
+      else if (pt < 27)
         canvas[2]->cd(pt + 1 - 18);
+      else
+        canvas[3]->cd(pt + 1 - 27);
       if (isBkgParab)
         bkg2[pt]->Draw("same");
       else
@@ -736,6 +826,9 @@ void YieldsvsPt(Int_t part = 5,
 
     histoPurity->SetBinContent(pt + 1, SSB[pt]);
     histoPurity->SetBinError(pt + 1, errSSB[pt]);
+
+    histoSignificance->SetBinContent(pt + 1, Yield[pt] / ErrYield[pt]);
+    histoSignificance->SetBinError(pt + 1, 0);
   }
 
   TotYield = TotYield / NEvents;
@@ -754,6 +847,8 @@ void YieldsvsPt(Int_t part = 5,
 
   TCanvas *canvasSummary = new TCanvas("canvasSummary", "canvasSummary", 1000, 800);
   canvasSummary->Divide(2, 2);
+  TCanvas *canvasSummaryBis = new TCanvas("canvasSummaryBis", "canvasSummaryBis", 1000, 800);
+  canvasSummaryBis->Divide(2, 2);
 
   canvasSummary->cd(1);
   gPad->SetBottomMargin(0.14);
@@ -777,30 +872,51 @@ void YieldsvsPt(Int_t part = 5,
   gPad->SetLeftMargin(0.14);
   StyleHisto(histoYield, 0, 1.2 * histoYield->GetBinContent(histoYield->GetMaximumBin()), 1, 1, titlePt, titleYield, "histoYield", 0, 0, 0, 1.4, 1.4, 1.2);
   histoYield->Draw("same");
+  canvasSummaryBis->cd(1);
+  gPad->SetBottomMargin(0.14);
+  gPad->SetLeftMargin(0.14);
+  StyleHisto(histoSignificance, 0, 1.2 * histoSignificance->GetBinContent(histoSignificance->GetMaximumBin()), 1, 1, titlePt, "Yield/#sigma_{Yield}", "histoSignificance", 0, 0, 0, 1.4, 1.4, 1.2);
+  histoSignificance->Draw("same");
 
   TString Soutputfile;
   Soutputfile = OutputDir + "/Yields_" + Spart[part] + "_" + year;
   Soutputfile += IsOneOrTwoGauss[UseTwoGauss];
+  // Soutputfile += SIsBkgParab[isBkgParab];
   if (isMB)
     Soutputfile += "_Mult0-100";
   else
     Soutputfile += Form("_Mult%i-%i", MultiplicityPerc[mul], MultiplicityPerc[mul + 1]);
+  // Soutputfile += "_DefSel";
+  if (isSysStudy)
+    Soutputfile += SysPath;
+  Soutputfile += "_FewPtBins";
 
   // save canvases
   canvas[0]->SaveAs(Soutputfile + ".pdf(");
   canvas[1]->SaveAs(Soutputfile + ".pdf");
   canvas[2]->SaveAs(Soutputfile + ".pdf");
+  canvas[3]->SaveAs(Soutputfile + ".pdf");
   canvasYield->SaveAs(Soutputfile + ".pdf");
-  canvasSummary->SaveAs(Soutputfile + ".pdf)");
+  canvasSummary->SaveAs(Soutputfile + ".pdf");
+  canvasSummaryBis->SaveAs(Soutputfile + ".pdf)");
 
   TFile *outputfile = new TFile(Soutputfile + ".root", "RECREATE");
+  outputfile->WriteTObject(histoCandidateSelections);
+  for (Int_t i = 0; i < 4; i++)
+  {
+    outputfile->WriteTObject(canvas[i]);
+  }
   outputfile->WriteTObject(histoCountsPerEvent);
   outputfile->WriteTObject(histoYield);
   outputfile->WriteTObject(histoMean);
   outputfile->WriteTObject(histoSigma);
   outputfile->WriteTObject(histoPurity);
+  outputfile->WriteTObject(histoSignificance);
   outputfile->Close();
-  cout << "Ho creato il file: " << Soutputfile << ".root" << endl;
+  cout << "\nA partire dal file:\n"
+       << SPathIn << "\n"
+       << SPathInEvt << endl;
+  cout << "\nHo creato il file: " << Soutputfile << ".root" << endl;
 
   cout << "Total raw yield (signal only) " << TotYield << endl;
   cout << "Total raw yield (signal+bkg within 3sigmas) " << TotSigBkg << endl;

@@ -1,0 +1,26 @@
+*On hyperloop:
+produce derived data using the task https://github.com/AliceO2Group/O2Physics/blob/master/PWGLF/Tasks/cascqaanalysis.cxx
+Derived data to be saved in: /data/dataalice/cdemart/Run3Analyses/OmegavsMult/DerivedData
+
+*On the gr3srv server:
+Run on derived data with the task https://github.com/AliceO2Group/O2Physics/blob/master/PWGLF/Tasks/cascpostprocessing.cxx
+Workflow is in: O2/scripts/script_cascpostprocessing.sh
+json file is: O2/cascpostprocessing_Run3Data.json
+Script to change json file and run multiple times with different configurables: O2/scripts/script_cascpostprocessing.sh
+Python macro which changes json file: O2/json_config.py 
+
+*Post processing locally:
+/Users/mbp-cdm-01/Desktop/AssegnoRicerca/Run3Analyses/OmegavsMult
+
+YieldsVsPt.C : fit to inv masses + spectra (saved in Yields directory)
+Takes in input the files in OutputFilesCascPPTask
+
+PseudoEfficiency.C : compute PseudoEfficiency
+Takes in input files in Yields directory
+
+CompareYields.C : compares mean values, sigmas, purity and yields obtained with different selections
+Takes in input files in Yields directory
+
+CompareAntiParticles.C : compares mean values, sigmas, purity and yields of particle and anti-particle
+Takes in input files in Yields directory
+

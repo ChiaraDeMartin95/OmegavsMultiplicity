@@ -83,15 +83,15 @@ TString CutLabelSummary[25] = {"MassWin", "y", "EtaDau", "dcapostopv", "dcanegto
                                "CascCosPA", "V0CosPA", "DCACascDau", "DCAV0Dau", "rCasc", "rV0", "DCAV0ToPV",
                                "LambdaMass", "TPCPr", "TPCPi", "TOFPr", "TOFPi", "TPCBach",
                                "TOFBach", "proplifetime", "rejcomp", "ptthrtof"};
-// cascospa, dca casc dau, dcabachtopv, dcapostopv, dcanegtopv, lambdamass, rejcomp, nsigmatpcKa, cascradius
-Int_t Bin[] = {7, 9, 6, 4, 5, 14, 22, 19, 11};
+// cascospa, dca casc dau, dcabachtopv, dcapostopv, dcanegtopv, lambdamass, rejcomp, nsigmatpcKa, cascradius, v0radius, dcav0dau, v0cospa, casclifetime
+Int_t Bin[] = {7, 9, 6, 4, 5, 14, 22, 19, 11, 12, 10, 8, 21};
 
 // Float_t YLowRatio[numChoice] = {0.98, 0, 0.9, 0.6, 0.6};
 // Float_t YUpRatio[numChoice] = {1.02, 1.2, 1.5, 1.2, 1.2};
 Float_t YLowRatio[numChoice] = {0.98, 0.8, 0.9, 0.8, 0.9};
 Float_t YUpRatio[numChoice] = {1.02, 1.2, 1.2, 1.1, 1.2};
 
-void CompareYields(Int_t itopovar = 2, // cospa, dcacascdau, dcabachtopv, dcapostopv, dcanegtopv, lambdamass, rejcomp, nsigmatpcKa, cascradius
+void CompareYields(Int_t itopovar = 2, // cospa, dcacascdau, dcabachtopv, dcapostopv, dcanegtopv, lambdamass, rejcomp, nsigmatpcKa, cascradius, v0radius, dcav0dau, v0cospa, casclifetime
                    Int_t Choice = 0,
                    TString SysPath = "",
                    TString OutputDir = "CompareTopo",
@@ -221,6 +221,14 @@ void CompareYields(Int_t itopovar = 2, // cospa, dcacascdau, dcabachtopv, dcapos
       continue; // nsigmatpcKa
     if (itopovar == 8 && ifile > 4)
       continue; // cascradius
+    if (itopovar == 9 && ifile > 7)
+      continue; // v0radius
+    if (itopovar == 10 && ifile > 7)
+      continue; // dcav0dau
+    if (itopovar == 11 && ifile > 6)
+      continue; // v0cospa
+    if (itopovar == 12 && ifile > 6)
+      continue; // cascproplifetime
     numFilesEffBis++;
     if (Choice == 0)
     {

@@ -79,10 +79,8 @@ Float_t YLowPurity[numPart] = {0, 0, 0, 0, 0, 0, 0};
 Float_t YLow[numPart] = {0};
 Float_t YUp[numPart] = {0};
 
-// Float_t YLowRatio[numChoice] = {0.98, 0, 0.9, 0.6, 0.6};
-// Float_t YUpRatio[numChoice] = {1.02, 1.2, 1.5, 1.2, 1.2};
-Float_t YLowRatio[numChoice] = {0.98, 0.8, 0.8, 0.6, 0.8};
-Float_t YUpRatio[numChoice] = {1.02, 1.2, 1.2, 1.4, 1.2};
+Float_t YLowRatio[numChoice] = {0.98, 0.8, 0.8, 0.6, 0.8, 0.8, 0.8};
+Float_t YUpRatio[numChoice] = {1.02, 1.2, 1.2, 1.4, 1.2, 1.2, 1.2};
 
 void CompareAntiParticles(Int_t Choice = 0,
                           TString SysPath = "",
@@ -101,7 +99,7 @@ void CompareAntiParticles(Int_t Choice = 0,
     cout << "Multiplciity out of range" << endl;
     return;
   }
-  if (part < 3 || part == 4 || part ==6)
+  if (part < 3 || part == 4 || part == 6)
   {
     cout << "this value of part is not specified, choose 3 (Xi) or 5 (Omega) " << endl;
     return;
@@ -159,12 +157,12 @@ void CompareAntiParticles(Int_t Choice = 0,
     legend = new TLegend(0.2, 0.65, 0.5, 0.9);
   else if (Choice == 2)
     legend = new TLegend(0.2, 0.15, 0.5, 0.4);
-  else if (Choice == 3)
+  else if (Choice == 3 || Choice == 6)
     legend = new TLegend(0.6, 0.65, 0.9, 0.9);
-  else if (Choice == 4)
+  else
     legend = new TLegend(0.6, 0.65, 0.9, 0.9);
   legend->SetTextSize(0.035);
-  //legend->AddEntry("", NamePart[part], "");
+  // legend->AddEntry("", NamePart[part], "");
 
   TFile *filein[numParticles];
   Int_t numParticlesEff = 0;
@@ -175,22 +173,35 @@ void CompareAntiParticles(Int_t Choice = 0,
       continue;
     numParticlesEff++;
     if (ifile == 0)
-      SPathIn = "Yields/Yields_"+ Spart[part];
+      SPathIn = "Yields/Yields_" + Spart[part];
     else if (ifile == 1)
-      SPathIn = "Yields/Yields_"+ Spart[part+1];
+      SPathIn = "Yields/Yields_" + Spart[part + 1];
     SPathIn += "_" + year;
     SPathIn += IsOneOrTwoGauss[UseTwoGauss];
     if (isMB)
       SPathIn += "_Mult0-100";
     else
       SPathIn += Form("_Mult%i-%i", MultiplicityPerc[mul], MultiplicityPerc[mul + 1]);
-    if (isSysStudy)
+    if (Choice == 5)
+    {
+      SPathIn = "Efficiency/eff6June";
+    }
+    else if (Choice == 6)
+    {
+      if (ifile == 0)
+        SPathIn = "Yields/YieldEffCorr" + year + "_" + Spart[part];
+      else if (ifile == 1)
+        SPathIn = "Yields/YieldEffCorr" + year + "_" + Spart[part + 1];
+    }
+    if (isSysStudy && Choice != 5)
       SPathIn += SysPath;
     SPathInFinal[ifile] = SPathIn;
-    SPathInFinal[ifile] += "_FewPtBins";
+    if (Choice != 6 && Choice != 5)
+      SPathInFinal[ifile] += "_FewPtBins";
     SPathInFinal[ifile] += ".root";
+
+    cout << "Getting file..." << SPathInFinal[ifile] << endl;
     filein[ifile] = new TFile(SPathInFinal[ifile], "");
-    // cout << "Getting file..." << SPathInFinal[ifile] << endl;
     // cout << filein[ifile] << endl;
     if (!filein[ifile])
     {
@@ -223,9 +234,28 @@ void CompareAntiParticles(Int_t Choice = 0,
     {
       YUp[part] = 100;
     }
+    else if (Choice == 5)
+    {
+      YLow[part] = 0;
+      YUp[part] = 0.2;
+    }
 
-    TString inputName = "histo" + TypeHisto[Choice];
-    histo[ifile] = (TH1F *)filein[ifile]->Get(inputName);
+    TString inputName;
+    if (Choice == 5)
+    {
+      TDirectoryFile *dir = (TDirectoryFile *)filein[ifile]->Get("effOmega");
+      inputName = "hEffOmega";
+      if (ifile == 0)
+        inputName += "Minus";
+      else if (ifile == 1)
+        inputName += "Plus";
+      histo[ifile] = (TH1F *)dir->Get(inputName);
+    }
+    else
+    {
+      inputName = "histo" + TypeHisto[Choice];
+      histo[ifile] = (TH1F *)filein[ifile]->Get(inputName);
+    }
     histo[ifile]->Sumw2();
     if (!histo[ifile])
     {
@@ -238,29 +268,32 @@ void CompareAntiParticles(Int_t Choice = 0,
     // Ratios
     histoRatio[ifile] = (TH1F *)histo[ifile]->Clone(Form("hRatio_%i", ifile));
     histoRatio[ifile]->Divide(histoParticle);
-    //ErrRatioCorr(histo[ifile], histoParticle, histoRatio[ifile], 1);
+    // ErrRatioCorr(histo[ifile], histoParticle, histoRatio[ifile], 1);
 
     for (Int_t b = 1; b <= histoRatio[ifile]->GetNbinsX(); b++)
     {
+      if (Choice==5) histo[ifile]->SetBinError(b, 0); 
+      if (Choice==5) histoParticle->SetBinError(b, 0); 
+      if (Choice==5) histoRatio[ifile]->SetBinError(b, 0); 
       // cout << "Num: " << histo->GetBinContent(b) << endl;
       // cout << "Denom " << histoParticle->GetBinContent(b) << endl;
       // cout << "Ratio " << histoRatio->GetBinContent(b) << endl;
     }
 
-    if (Choice == 3)
+    if (Choice == 3 || Choice == 6)
     {
       YLow[part] = 0;
       if (ifile == 0)
-        YUp[part] = 1.2 * histo[ifile]->GetBinContent(histo[ifile]->GetMaximumBin());
+        YUp[part] = 1.4 * histo[ifile]->GetBinContent(histo[ifile]->GetMaximumBin());
       else
       {
         if (histo[ifile]->GetBinContent(histo[ifile]->GetMaximumBin()) > histo[ifile - 1]->GetBinContent(histo[ifile - 1]->GetMaximumBin()))
         {
-          YUp[part] = 1.2 * histo[ifile]->GetBinContent(histo[ifile]->GetMaximumBin());
+          YUp[part] = 1.4 * histo[ifile]->GetBinContent(histo[ifile]->GetMaximumBin());
         }
       }
     }
-    if (Choice != 3)
+    if (Choice != 3 && Choice != 6)
     {
       YLow[part] += 10e-5;
       if (Choice != 2)
@@ -282,8 +315,10 @@ void CompareAntiParticles(Int_t Choice = 0,
     histo[ifile]->Draw("same");
     if (Choice == 0)
       lineMass->DrawClone("same");
-    if (ifile==0) legend->AddEntry(histo[ifile], NamePart[part], "pl");
-    else legend->AddEntry(histo[ifile], NamePart[part+1], "pl");
+    if (ifile == 0)
+      legend->AddEntry(histo[ifile], NamePart[part], "pl");
+    else
+      legend->AddEntry(histo[ifile], NamePart[part + 1], "pl");
     if (ifile == numParticlesEffBis - 1)
       legend->Draw("");
 

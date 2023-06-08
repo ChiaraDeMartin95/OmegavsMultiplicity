@@ -133,7 +133,7 @@ void YieldsVsPt(Bool_t isSysStudy = 1,
                 TString SysPath = "",
                 Int_t part = 5,
                 Int_t MassRebin = 2,
-                Int_t MultType = 0, // 0: no mult for backward compatibility, 1: FT0M, 2: FV0M
+                Int_t MultType = 0, // 0: no mult for backward compatibility, 1: FT0M, 2: FV0A
                 Bool_t isMB = 1,
                 Int_t mul = 0,
                 TString year = "LHC22m_pass4_Train79153" /*"LHC22o_pass3_Train75538" /*"LHC22r_pass3_Train67853"*/,
@@ -192,6 +192,8 @@ void YieldsVsPt(Bool_t isSysStudy = 1,
   TH2F *h2;
   TH2F *h2Bis;
   TH1F *hEvents;
+  TH1F *hEventsFT0M;
+  TH1F *hEventsFV0A;
   Int_t MultLowBin = 0;
   Int_t MultUpBin = 0;
 
@@ -248,13 +250,49 @@ void YieldsVsPt(Bool_t isSysStudy = 1,
   hEvents = (TH1F *)dirEvt->Get("hNEvents");
   if (!hEvents)
   {
-    cout << "hEventSelection/hProcessEvents not avilable " << endl;
+    cout << "hEvents not available " << endl;
     return;
   }
-  NEvents = hEvents->GetBinContent(1);
+  hEventsFT0M = (TH1F *)dirEvt->Get("hCentFT0M");
+  if (!hEventsFT0M)
+  {
+    cout << "hCentFT0M not available " << endl;
+    return;
+  }
+  hEventsFV0A = (TH1F *)dirEvt->Get("hCentFV0A");
+  if (!hEventsFV0A)
+  {
+    cout << "hCentFV0A not available " << endl;
+    return;
+  }
+  if (isMB == 1)
+    NEvents = hEvents->GetBinContent(1);
+  else
+  {
+    if (MultType == 1)
+    {
+      for (Int_t b = 1; b <= hEventsFT0M->GetNbinsX(); b++)
+      {
+        if (hEventsFT0M->GetBinCenter(b) > MultiplicityPerc[mul] && hEventsFT0M->GetBinCenter(b) < MultiplicityPerc[mul + 1])
+        {
+          NEvents += hEventsFT0M->GetBinContent(b);
+        }
+      }
+    }
+    else if (MultType == 2)
+    {
+      for (Int_t b = 1; b <= hEventsFV0A->GetNbinsX(); b++)
+      {
+        if (hEventsFV0A->GetBinCenter(b) > MultiplicityPerc[mul] && hEventsFV0A->GetBinCenter(b) < MultiplicityPerc[mul + 1])
+        {
+          NEvents += hEventsFV0A->GetBinContent(b);
+        }
+      }
+    }
+  }
   cout << "NEvents" << NEvents << endl;
 
-  const Int_t numPt = 19; // 19; // 23;
+  const Int_t numPt = 19; // default: 19; topo: 11;
 
   // Xi
   //  Float_t binpt[numPt + 1] = {0.4, 0.6, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0, 2.5, 3, 4}; // 10
@@ -280,14 +318,16 @@ void YieldsVsPt(Bool_t isSysStudy = 1,
   // 28
 
   // 19
+  // default
   Float_t binpt[numPt + 1] = {0.4, 0.6, 0.8, 1.0,
-                              1.2, 1.4, 1.6, 1.85, 2.0,
+                              1.2, 1.4, 1.6, 1.8, 2.0,
                               2.2, 2.4, 2.6, 2.8, 3.0,
                               3.5, 4.0, 4.5, 5.0, 6.0, 8.0};
 
+  // for topo studies
   // Float_t binpt[numPt + 1] = {0.4, 0.8,
-  //                           1.2, 1.6, 2.0,
-  //                         2.4, 2.8, 3.2, 4.0, 5.0, 6.0, 8.0};
+  //                          1.2, 1.6, 2.0,
+  //                      2.4, 2.8, 3.2, 4.0, 5.0, 6.0, 8.0};
 
   TString SPt[numPt] = {""};
   TH1F *hInvMass[numPt];
@@ -415,11 +455,19 @@ void YieldsVsPt(Bool_t isSysStudy = 1,
           isBkgParab = 0;
         else
           isBkgParab = 1;
-        if (part==6) {
-          //if (binpt[pt] == 1.4 || binpt[pt] == 2. || binpt[pt] == 2.2) isBkgParab = 0;
-          if (binpt[pt] >= 1.99 && binpt[pt] <= 2.21) isBkgParab = 0;
-          if (binpt[pt] >= 1.39 && binpt[pt] <= 1.41) isBkgParab = 0;
-        }  
+        if (part == 5 || part == 6)
+        {
+          // if (binpt[pt] == 1.4 || binpt[pt] == 2. || binpt[pt] == 2.2) isBkgParab = 0;
+          if (binpt[pt] >= 1.99 && binpt[pt] <= 2.1)
+            isBkgParab = 0;
+          if (binpt[pt] >= 1.59 && binpt[pt] <= 1.61)
+            isBkgParab = 0;
+        }
+        if (part == 6)
+        {
+          if (binpt[pt] >= 0.9 && binpt[pt] <= 2.1)
+            isBkgParab = 0;
+        }
       }
     }
     if (part == 5 || part == 6)
@@ -566,7 +614,7 @@ void YieldsVsPt(Bool_t isSysStudy = 1,
         total[pt]->SetParLimits(2, 0.002, 0.02);
         total[pt]->SetParLimits(3, 0.08 * hInvMass[pt]->GetBinContent(hInvMass[pt]->GetMaximumBin()), hInvMass[pt]->GetBinContent(hInvMass[pt]->GetMaximumBin())); // maximum was wothout 0.3
         total[pt]->SetParLimits(4, 1.66, 1.68);
-        total[pt]->SetParLimits(5, 0.002, 0.02);
+        total[pt]->SetParLimits(5, 0.001, 0.02);
         if (isMeanFixedPDG)
         {
           total[pt]->FixParameter(1, massParticle[part]);
@@ -718,9 +766,9 @@ void YieldsVsPt(Bool_t isSysStudy = 1,
       }
       else if (Spart[part] == "OmegaNeg" || Spart[part] == "OmegaPos" || Spart[part] == "Omega")
       {
-        // total[pt]->SetParLimits(0, 0.08 * hInvMass[pt]->GetBinContent(hInvMass[pt]->GetMaximumBin()), hInvMass[pt]->GetBinContent(hInvMass[pt]->GetMaximumBin()));
+        total[pt]->SetParLimits(0, 0.08 * hInvMass[pt]->GetBinContent(hInvMass[pt]->GetMaximumBin()), hInvMass[pt]->GetBinContent(hInvMass[pt]->GetMaximumBin()));
         total[pt]->SetParLimits(1, 1.66, 1.68);
-        total[pt]->SetParLimits(2, 0.002, 0.02);
+        total[pt]->SetParLimits(2, 0.001, 0.02);
         if (isMeanFixedPDG)
         {
           total[pt]->FixParameter(1, massParticle[part]);

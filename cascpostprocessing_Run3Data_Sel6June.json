@@ -1,0 +1,41 @@
+{
+    "internal-dpl-clock": "",
+    "internal-dpl-aod-reader": {
+        "aod-file": "/data/dataalice/cdemart/Run3Analyses/OmegavsMult/DerivedData/LHC22m_pass4/AO2D_cascqa_LHC22m_pass4_Train79153.root",
+        "time-limit": "0",
+        "start-value-enumeration": "0",
+        "end-value-enumeration": "-1",
+        "step-value-enumeration": "1"
+    },
+    "lf-cascpostprocessing": {
+	"isXi": "0",
+        "cutzvertex": "10",
+        "sel8": "true",
+        "minpt": "0",
+        "rap": "0.5",
+        "etadau": "0.8",
+        "v0radius": "1.2",
+        "cascradius": "0.5",
+        "casccospa": "0.99",
+        "v0cospa": "0.97",
+        "dcanegtopv": "0.0",
+        "dcapostopv": "0.0",
+        "dcabachtopv": "0.04",
+        "dcacascdau": "0.8",
+        "dcav0dau": "0.4",
+        "dcav0topv": "0",
+        "masswin": "0.05",
+        "rejcomp": "0.01",
+        "lambdamasswin": "0.01",
+        "proplifetime": "7",
+        "nsigmatpcPi": "4",
+        "nsigmatpcPr": "4",
+        "nsigmatpcKa": "4",
+        "nsigmatofPi": "10",
+        "nsigmatofPr": "10",
+        "nsigmatofKa": "10",
+        "masswintpc": "0.012",
+        "hastof": "0",
+	"ptthrtof": "0"
+    }
+}

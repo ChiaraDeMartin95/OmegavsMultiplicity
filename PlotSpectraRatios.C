@@ -346,7 +346,7 @@ void PlotSpectraRatios(Int_t part = 5,
 
   } // end loop on mult
   fileout->Close();
-
+  canvasPtSpectra->SaveAs(stringoutpdf + ".pdf");
   cout << "\nStarting from the files (for the different mult): " << PathIn << endl;
 
   cout << "\nI have created the file:\n " << stringout << endl;

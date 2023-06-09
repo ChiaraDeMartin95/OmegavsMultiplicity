@@ -1,0 +1,2 @@
+scp cdemart@gr3srv.ts.infn.it://data/dataalice/cdemart/O2/AnalysisResults.root OutputFilesCascPPTask/LHC22m_pass4/AnalysisResults_LHC22m_pass4_Train79153_Omega_DefSel.root
+#scp cdemart@gr3srv.ts.infn.it://data/dataalice/cdemart/Run3Analyses/OmegavsMult/DerivedData/LHC22m_pass4/AnalysisResults_cascqa_LHC22m_pass4_Train79153.root AnalysisResultsCascQATask/LHC22m_pass4/AnalysisResultsEvts_LHC22m_pass4_Train79153_Omega.root

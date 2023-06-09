@@ -1,0 +1,6 @@
+scp Yields/YieldEffCorrLHC22m_pass4_Train79153_OmegaNeg_OneGaussFit_Mult0-10_Sel6June.root   cdemart@gr3srv.ts.infn.it://data/dataalice/cdemart/Run3Analyses/OmegavsMult/Yields/.
+scp Yields/YieldEffCorrLHC22m_pass4_Train79153_OmegaNeg_OneGaussFit_Mult10-20_Sel6June.root cdemart@gr3srv.ts.infn.it://data/dataalice/cdemart/Run3Analyses/OmegavsMult/Yields/.
+scp Yields/YieldEffCorrLHC22m_pass4_Train79153_OmegaNeg_OneGaussFit_Mult20-30_Sel6June.root cdemart@gr3srv.ts.infn.it://data/dataalice/cdemart/Run3Analyses/OmegavsMult/Yields/.
+scp Yields/YieldEffCorrLHC22m_pass4_Train79153_OmegaNeg_OneGaussFit_Mult30-40_Sel6June.root cdemart@gr3srv.ts.infn.it://data/dataalice/cdemart/Run3Analyses/OmegavsMult/Yields/.
+scp Yields/YieldEffCorrLHC22m_pass4_Train79153_OmegaNeg_OneGaussFit_Mult40-100_Sel6June.root cdemart@gr3srv.ts.infn.it://data/dataalice/cdemart/Run3Analyses/OmegavsMult/Yields/.
+scp Yields/YieldEffCorrLHC22m_pass4_Train79153_OmegaNeg_OneGaussFit_Mult0-100_Sel6June.root cdemart@gr3srv.ts.infn.it://data/dataalice/cdemart/Run3Analyses/OmegavsMult/Yields/.

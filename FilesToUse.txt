@@ -12,6 +12,9 @@ Python macro which changes json file: O2/json_config.py
 *Post processing locally:
 /Users/mbp-cdm-01/Desktop/AssegnoRicerca/Run3Analyses/OmegavsMult
 
+*Post processing on server (only for running macro YieldFit.C):
+/data/dataalice/cdemart/Run3Analyses/OmegavsMult
+
 YieldsVsPt.C : fit to inv masses + spectra (saved in Yields directory)
 Takes in input the files in OutputFilesCascPPTask
 
@@ -24,3 +27,11 @@ Takes in input files in Yields directory
 CompareAntiParticles.C : compares mean values, sigmas, purity and yields of particle and anti-particle
 Takes in input files in Yields directory
 
+YieldEffCorr.C : correct raw yields by efficiency and compare them with published ones
+Takes in input files in Yields directory and in Efficiency directory
+
+PlotSpectraRatios.C : plots spectra in multiplicity classes + ratio to MB one
+Takes in input files in Yields directory
+
+YieldFit.C (to be run on gr3srv): fit the pt spectra (+ plots spectra + fits + ratio data/fit) and plots pt-integrated yields vs multiplicity classes
+Use the script script_UpLoadToServer.sh to uploaded the desired files to the gr3srv server

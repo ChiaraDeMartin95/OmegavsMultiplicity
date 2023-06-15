@@ -112,33 +112,33 @@ TString titlePt = "p_{T} (GeV/c)";
 TString titleYield = "1/N_{ev} dN/dp_{T}";
 
 TString TitleInvMass[numPart] = {"(#pi^{+}, #pi^{-}) invariant mass (GeV/#it{c}^{2})", "(p, #pi^{-}) invariant mass (GeV/#it{c}^{2})", "(#bar{p}, #pi^{-}) invariant mass (GeV/#it{c}^{2})", "(#Lambda, #pi^{-}) invariant mass (GeV/#it{c}^{2})"};
-TString namehisto[numPart] = {"h3dMassK0Short", "", "", "hCascMinusInvMassvsPt", "hCascPlusInvMassvsPt", "hCascMinusInvMassvsPt", "hCascPlusInvMassvsPt"};
-Float_t LowLimitMass[numPart] = {0.42, 1.09, 1.09, 1.29, 1.29, 1.61, 1.61}; // 0.44
-Float_t UpLimitMass[numPart] = {0.57, 1.14, 1.14, 1.35, 1.35, 1.73, 1.73};  // 0.55
-Float_t LowMassRange[numPart] = {0.48, 1.09, 1.09, 1.31, 1.31, 1.655, 1.655};
-Float_t UpMassRange[numPart] = {0.51, 1.14, 1.14, 1.33, 1.33, 1.685, 1.685};
+TString namehisto[numPart] = {"h3dMassK0Short", "", "", "hCascMinusInvMassvsPt", "hCascPlusInvMassvsPt", "hCascMinusInvMassvsPt", "hCascMinusInvMassvsPt", "hCascPlusInvMassvsPt", "hCascMinusInvMassvsPt"};
+Float_t LowLimitMass[numPart] = {0.42, 1.09, 1.09, 1.29, 1.29, 1.29, 1.61, 1.61, 1.61}; // 0.44
+Float_t UpLimitMass[numPart] = {0.57, 1.14, 1.14, 1.35, 1.35, 1.35, 1.73, 1.73, 1.73};  // 0.55
+Float_t LowMassRange[numPart] = {0.48, 1.09, 1.09, 1.31, 1.31, 1.31, 1.655, 1.655, 1.655};
+Float_t UpMassRange[numPart] = {0.51, 1.14, 1.14, 1.33, 1.33, 1.33, 1.685, 1.685, 1.685};
 
-Float_t min_range_signal[numPart] = {0.46, 1.105, 1.105, 1.31, 1.31, 1.65, 1.65}; // estremi region fit segnale (gaussiane)
-Float_t max_range_signal[numPart] = {0.535, 1.125, 1.125, 1.334, 1.334, 1.69, 1.69};
-Float_t min_histo[numPart] = {0.42, 1.09, 1.09, 1.29, 1.29, 1.62, 1.62}; // estremi del range visualizzazione bkg
-Float_t max_histo[numPart] = {0.57, 1.14, 1.14, 1.35, 1.35, 1.72, 1.72};
-Float_t liminf[numPart] = {0.45, 1.1153, 1.1153, 1.29, 1.29, 1.63, 1.63}; // estremi regione fit del bkg e total
-Float_t limsup[numPart] = {0.545, 1.1168, 1.1168, 1.35, 1.35, 1.71, 1.71};
+Float_t min_range_signal[numPart] = {0.46, 1.105, 1.105, 1.31, 1.31, 1.31, 1.65, 1.65, 1.65}; // estremi region fit segnale (gaussiane)
+Float_t max_range_signal[numPart] = {0.535, 1.125, 1.125, 1.334, 1.334, 1.334, 1.69, 1.69, 1.69};
+Float_t min_histo[numPart] = {0.42, 1.09, 1.09, 1.29, 1.29, 1.29, 1.62, 1.62, 1.62}; // estremi del range visualizzazione bkg
+Float_t max_histo[numPart] = {0.57, 1.14, 1.14, 1.35, 1.35, 1.35, 1.72, 1.72, 1.72};
+Float_t liminf[numPart] = {0.45, 1.1153, 1.1153, 1.29, 1.29, 1.29, 1.63, 1.63, 1.63}; // estremi regione fit del bkg e total
+Float_t limsup[numPart] = {0.545, 1.1168, 1.1168, 1.35, 1.35, 1.35, 1.71, 1.71, 1.71};
 
 // histogram limits
 // Omega 22o_pass3: 1.62-1.72
 // Omega 22m_pass4: 1.64 - 1.69
 
 void YieldsVsPt(Bool_t isSysStudy = 1,
-                TString SysPath = "",
-                Int_t part = 5,
+                TString SysPath = "" /*"_Sel6June"*/,
+                Int_t part = 6,
                 Int_t MassRebin = 2,
-                Int_t MultType = 0, // 0: no mult for backward compatibility, 1: FT0M, 2: FV0A
+                Int_t MultType = 1, // 0: no mult for backward compatibility, 1: FT0M, 2: FV0A
                 Bool_t isMB = 1,
                 Int_t mul = 0,
-                TString year = "LHC22m_pass4_Train79153" /*"LHC22o_pass3_Train75538" /*"LHC22r_pass3_Train67853"*/,
-                TString SPathIn = "OutputFilesCascPPTask/LHC22m_pass4/AnalysisResults",
-                TString SPathInEvt = "AnalysisResultsCascQATask/LHC22m_pass4/AnalysisResultsEvts",
+                TString year = "LHC22o_pass4_Train89684" /*"LHC22o_pass3_Train75538" /*"LHC22r_pass3_Train67853"*/,
+                TString SPathIn = "OutputFilesCascPPTask/LHC22o_pass4/AnalysisResults",
+                TString SPathInEvt = "AnalysisResultsCascQATask/LHC22o_pass4/AnalysisResultsEvts",
                 TString OutputDir = "Yields",
                 Bool_t UseTwoGauss = 0,
                 Bool_t isBkgParab = 0,
@@ -151,18 +151,23 @@ void YieldsVsPt(Bool_t isSysStudy = 1,
     cout << "Multiplciity out of range" << endl;
     return;
   }
+  if (MultType == 0 && (part == 5 || part == 8))
+  { // pos + neg cascades
+    cout << "No backward compatibility for this case" << endl;
+    return;
+  }
   if (part < 3)
   {
     cout << "this value of part is not specified, choose 3 - 4 (Xi) or 5 - 6  (Omega) " << endl;
     return;
   }
-  if (part == 5 || part == 6)
+  if (part == 6 || part == 7 || part == 8)
   { // Omega
-    if (year == "LHC22m_pass4_Train79153")
-    {
-      LowLimitMass[part] = 1.63;
-      UpLimitMass[part] = 1.71;
-    }
+    // if (year == "LHC22m_pass4_Train79153")
+    //{
+    LowLimitMass[part] = 1.63;
+    UpLimitMass[part] = 1.71;
+    //}
   }
 
   SPathIn += "_" + year + "_" + SpartType[part];
@@ -189,6 +194,7 @@ void YieldsVsPt(Bool_t isSysStudy = 1,
   TDirectoryFile *dirEvt;
   TDirectoryFile *dirCasc;
   TH3F *h3;
+  TH3F *h3Plus;
   TH2F *h2;
   TH2F *h2Bis;
   TH1F *hEvents;
@@ -223,14 +229,27 @@ void YieldsVsPt(Bool_t isSysStudy = 1,
   else
   {
     if (MultType == 1)
+    {
       h3 = (TH3F *)dir->Get(namehisto[part] + "_FT0M");
+      h3Plus = (TH3F *)dir->Get("hCascPlusInvMassvsPt_FT0M");
+    }
     else if (MultType == 2)
+    {
       h3 = (TH3F *)dir->Get(namehisto[part] + "_FV0A");
+      h3Plus = (TH3F *)dir->Get("hCascPlusInvMassvsPt_FV0A");
+    }
     if (!h3)
     {
       cout << "h3 cascade not avilable " << endl;
       return;
     }
+    if (!h3Plus)
+    {
+      cout << "h3 positive cascade not avilable " << endl;
+      return;
+    }
+    if (part == 5 || part == 8)
+      h3->Add(h3Plus);
     if (isMB)
     {
       MultLowBin = h3->GetXaxis()->FindBin(100 + 0.001);
@@ -292,7 +311,7 @@ void YieldsVsPt(Bool_t isSysStudy = 1,
   }
   cout << "NEvents" << NEvents << endl;
 
-  const Int_t numPt = 19; // default: 19; topo: 11;
+  const Int_t numPt = 17; // default: 19; topo: 11;
 
   // Xi
   //  Float_t binpt[numPt + 1] = {0.4, 0.6, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0, 2.5, 3, 4}; // 10
@@ -317,12 +336,17 @@ void YieldsVsPt(Bool_t isSysStudy = 1,
   //                  4.5, 5.0, 6.0, 8.0};
   // 28
 
-  // 19
-  // default
-  Float_t binpt[numPt + 1] = {0.4, 0.6, 0.8, 1.0,
+  // 17
+  // default for 22m_pass4_Train79153
+  Float_t binpt[numPt + 1] = {0.8, 1.0,
                               1.2, 1.4, 1.6, 1.8, 2.0,
                               2.2, 2.4, 2.6, 2.8, 3.0,
                               3.5, 4.0, 4.5, 5.0, 6.0, 8.0};
+
+  //Float_t binpt[numPt + 1] = {0.4, 0.6, 0.8, 1.0,
+  //                            1.2, 1.4, 1.6, 1.8, 2.0,
+  //                            2.2, 2.4, 2.6, 2.8, 3.0,
+  //                            3.5, 4.0, 4.5, 5.0, 6.0, 8.0};
 
   // for topo studies
   // Float_t binpt[numPt + 1] = {0.4, 0.8,
@@ -351,10 +375,10 @@ void YieldsVsPt(Bool_t isSysStudy = 1,
   Float_t errcount = 0;
   for (Int_t pt = 0; pt < numPt; pt++)
   {
-    if (part == 5 || part == 6)
+    if (part == 6 || part == 7 || part == 8)
     {
-      if (binpt[pt] < 0.6)
-        continue;
+      //if (binpt[pt] < 0.6)
+        //continue;
       // if (binpt[pt] > 4)
       // continue;
     }
@@ -427,9 +451,10 @@ void YieldsVsPt(Bool_t isSysStudy = 1,
 
   for (Int_t pt = 0; pt < numPt; pt++)
   {
-    if (part == 5 || part == 6)
+    if (part == 6 || part == 7 || part == 8)
     { // Omega
-      if (year == "LHC22m_pass4_Train79153")
+      // if (year == "LHC22m_pass4_Train79153")
+      if (kTRUE)
       {
         min_histo[part] = 1.645; // estremi del range visualizzazione bkg
         max_histo[part] = 1.695;
@@ -455,7 +480,7 @@ void YieldsVsPt(Bool_t isSysStudy = 1,
           isBkgParab = 0;
         else
           isBkgParab = 1;
-        if (part == 5 || part == 6)
+        if (part == 6 || part == 7 || part == 8)
         {
           // if (binpt[pt] == 1.4 || binpt[pt] == 2. || binpt[pt] == 2.2) isBkgParab = 0;
           if (binpt[pt] >= 1.99 && binpt[pt] <= 2.1)
@@ -463,14 +488,14 @@ void YieldsVsPt(Bool_t isSysStudy = 1,
           if (binpt[pt] >= 1.59 && binpt[pt] <= 1.61)
             isBkgParab = 0;
         }
-        if (part == 6)
+        if (part == 7)
         {
           if (binpt[pt] >= 0.9 && binpt[pt] <= 2.1)
             isBkgParab = 0;
         }
       }
     }
-    if (part == 5 || part == 6)
+    if (part == 6 || part == 7 || part == 8)
     {
       if (binpt[pt] < 0.6)
         continue;
@@ -682,7 +707,7 @@ void YieldsVsPt(Bool_t isSysStudy = 1,
         bkg1[pt]->FixParameter(1, total[pt]->GetParameter(7));
       }
 
-      if (part == 3)
+      if (part == 3 || part == 4 || part == 5)
         UseTwoGauss = 0;
 
       if (UseTwoGauss)
@@ -884,7 +909,7 @@ void YieldsVsPt(Bool_t isSysStudy = 1,
   histoYield->SetLineColor(kRed);
 
   TCanvas *canvasYield = new TCanvas("canvasYield", "canvasYield", 1000, 800);
-  if (part == 5 || part == 6)
+  if (part == 6 || part == 7 || part == 8)
     histoCountsPerEvent->GetYaxis()->SetRangeUser(0, 0.00007);
   histoCountsPerEvent->Draw("same");
   histoYield->DrawClone("same");
@@ -933,11 +958,12 @@ void YieldsVsPt(Bool_t isSysStudy = 1,
   if (isMB)
     Soutputfile += "_Mult0-100";
   else
-    Soutputfile += Form("_Mult%i-%i", MultiplicityPerc[mul], MultiplicityPerc[mul + 1]);
+    Soutputfile += Form("_Mult%.1f-%.1f", MultiplicityPerc[mul], MultiplicityPerc[mul + 1]);
   // Soutputfile += "_DefSel";
   if (isSysStudy)
     Soutputfile += SysPath;
-  Soutputfile += "_FewPtBins";
+  // Soutputfile += "_FewPtBins";
+  // Soutputfile += "_Test";
 
   // save canvases
   canvas[0]->SaveAs(Soutputfile + ".pdf(");

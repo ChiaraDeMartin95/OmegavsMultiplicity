@@ -68,13 +68,13 @@ void StyleHisto(TH1F *histo, Float_t Low, Float_t Up, Int_t color, Int_t style, 
 TString titlePt = "p_{T} (GeV/c)";
 TString titleYield = "1/N_{ev} dN/dp_{T}";
 
-void YieldEffCorr(Int_t part = 5,
+void YieldEffCorr(Int_t part = 6,
                   TString SPathInEff = "eff6June.root",
-                  TString SysPath = "",
+                  TString SysPath = "_Sel6June",
                   TString OutputDir = "Yields",
                   TString year = "LHC22m_pass4_Train79153",
                   Bool_t isSysStudy = 1,
-                  Int_t MultType = 0, // 0: no mult for backward compatibility, 1: FT0M, 2: FV0M
+                  Int_t MultType = 1, // 0: no mult for backward compatibility, 1: FT0M, 2: FV0M
                   Bool_t isMB = 1,
                   Int_t mul = 0,
                   Bool_t UseTwoGauss = 0)
@@ -83,6 +83,11 @@ void YieldEffCorr(Int_t part = 5,
   if (mul > numMult)
   {
     cout << "Multiplciity out of range" << endl;
+    return;
+  }
+  if (MultType == 0 && (part == 5 || part == 8))
+  { // pos + neg cascades
+    cout << "No backward compatibility for this case" << endl;
     return;
   }
   if (part < 3)
@@ -95,9 +100,10 @@ void YieldEffCorr(Int_t part = 5,
   if (isMB)
     Sfileout += "_Mult0-100";
   else
-    Sfileout += Form("_Mult%i-%i", MultiplicityPerc[mul], MultiplicityPerc[mul + 1]);
+    Sfileout += Form("_Mult%.1f-%.1f", MultiplicityPerc[mul], MultiplicityPerc[mul + 1]);
   if (isSysStudy)
     Sfileout += SysPath;
+  //Sfileout += "_Test";
 
   TString SPathIn;
   SPathIn = "Yields/Yields_" + Spart[part];
@@ -106,10 +112,10 @@ void YieldEffCorr(Int_t part = 5,
   if (isMB)
     SPathIn += "_Mult0-100";
   else
-    SPathIn += Form("_Mult%i-%i", MultiplicityPerc[mul], MultiplicityPerc[mul + 1]);
+    SPathIn += Form("_Mult%.1f-%.1f", MultiplicityPerc[mul], MultiplicityPerc[mul + 1]);
   if (isSysStudy)
     SPathIn += SysPath;
-  SPathIn += "_FewPtBins";
+  // SPathIn += "_FewPtBins";
   SPathIn += ".root";
 
   cout << "SPathIn: " << SPathIn << endl;
@@ -143,11 +149,17 @@ void YieldEffCorr(Int_t part = 5,
   }
 
   TDirectoryFile *dir = (TDirectoryFile *)fileinEff->Get("effOmega");
-  TString inputNameEff = "hEffOmega";
-  if (part == 5)
+  TString inputNameEff = "hEff";
+  if (part >= 3 && part <= 5)
+    inputNameEff += "Xi";
+  else if (part >= 6 && part <= 8)
+    inputNameEff += "Omega";
+  if (part == 3 || part == 6)
     inputNameEff += "Minus";
-  else if (part == 6)
+  else if (part == 4 || part == 7)
     inputNameEff += "Plus";
+  else if (part == 5 || part == 8)
+    inputNameEff += "Sum";
   histoEff = (TH1F *)dir->Get(inputNameEff);
   histoEff->Sumw2();
   if (!histoEff)
@@ -157,7 +169,7 @@ void YieldEffCorr(Int_t part = 5,
   }
 
   histoYieldCorr = (TH1F *)histoYield->Clone("histoYieldCorr");
-  //histoYieldCorr->Divide(histoEff);
+  // histoYieldCorr->Divide(histoEff);
   for (Int_t i = 1; i <= histoEff->GetNbinsX(); i++)
   {
     cout << "\npt: " << histoYield->GetBinCenter(i) << endl;
@@ -184,12 +196,15 @@ void YieldEffCorr(Int_t part = 5,
   */
 
   Int_t partC = 0;
-  if (part == 5)
+  if (part == 3 || part == 6)
     partC = 0;
-  else if (part == 6)
+  else if (part == 4 || part == 7)
     partC = 1;
   StyleHisto(histoYieldCorr, 0, 1.3 * histoYieldCorr->GetBinContent(histoYieldCorr->GetMaximumBin()), ColorPart[partC], 33, TitleXPt, titleYield, "", 0, 0, 0, 1.5, 1.5, 2);
-  if (part==5 || part==6) histoYieldCorr->GetYaxis()->SetRangeUser(0, 8*1e-4);
+  if (part == 6 || part == 7)
+    histoYieldCorr->GetYaxis()->SetRangeUser(0, 8 * 1e-4);
+  else if (part == 8)
+    histoYieldCorr->GetYaxis()->SetRangeUser(0, 16 * 1e-4);
   // histoYieldCorr->GetXaxis()->SetLabelSize(0.08);
   // histoYieldCorr->GetXaxis()->SetTitleSize(0.08);
   // histoYieldCorr->GetXaxis()->SetTitleOffset(1.2);
@@ -205,31 +220,55 @@ void YieldEffCorr(Int_t part = 5,
   canvas->SaveAs(Sfileout + ".png");
 
   TString SPathInPub = "PublishedYield13TeV/Results-Omega";
-  if (part == 5)
-    SPathInPub += "Minus";
-  else if (part == 6)
-    SPathInPub += "Plus";
-  SPathInPub += "-V0M-000to100_WithV0refitAndImprovedDCA.root";
-  cout << SPathInPub << endl;
-  TFile *fileinPub = new TFile(SPathInPub, "");
-  if (!fileinPub)
-  {
-    cout << "No pub yield file " << endl;
-    return;
+  TFile *fileinPub;
+  TString histoPubName;
+  TH1F *histoPub;
+  TH1F *histoPubFinal;
+  for (Int_t i = 0; i <= 1; i++)
+  { // loop over particle and antiparticle and sum them if needed
+    {
+      if (part == 6 && i == 1)
+        continue;
+      if (part == 7 && i == 0)
+        continue;
+      SPathInPub = "PublishedYield13TeV/Results-Omega";
+      if (i == 0)
+        SPathInPub += "Minus";
+      else if (i == 1)
+        SPathInPub += "Plus";
+      SPathInPub += "-V0M-000to100_WithV0refitAndImprovedDCA.root";
+      cout << SPathInPub << endl;
+      fileinPub = new TFile(SPathInPub, "");
+      if (!fileinPub)
+      {
+        cout << "No pub yield file " << endl;
+        return;
+      }
+      histoPubName = "fHistPtOmega";
+      if (i == 0)
+        histoPubName += "Minus";
+      else if (i == 1)
+        histoPubName += "Plus";
+      histoPub = (TH1F *)fileinPub->Get(histoPubName);
+      if (part == 6 || part == 7)
+        histoPubFinal = (TH1F *)histoPub->Clone("histoPubFinal");
+      else
+      {
+        if (i == 0)
+          histoPubFinal = (TH1F *)histoPub->Clone("histoPubFinal");
+        else
+          histoPubFinal->Add(histoPub);
+      }
+    }
   }
-  TString histoPubName = "fHistPtOmega";
-  if (part == 5)
-    histoPubName += "Minus";
-  else if (part == 6)
-    histoPubName += "Plus";
-  TH1F *histoPub = (TH1F *)fileinPub->Get(histoPubName);
-  StyleHisto(histoPub, 0, 1.3 * histoPub->GetBinContent(histoPub->GetMaximumBin()), kAzure+7, 33, TitleXPt, titleYield, "", 0, 0, 0, 1.5, 1.5, 2);
+
+  StyleHisto(histoPub, 0, 1.3 * histoPubFinal->GetBinContent(histoPubFinal->GetMaximumBin()), kAzure + 7, 33, TitleXPt, titleYield, "", 0, 0, 0, 1.5, 1.5, 2);
 
   TCanvas *canvasComp = new TCanvas("canvasComp" + Spart[part], "canvasComp" + Spart[part], 1000, 800);
   StyleCanvas(canvasComp, 0.15, 0.05, 0.05, 0.15);
   canvasComp->cd();
   histoYieldCorr->Draw("same");
-  histoPub->Draw("same");
+  histoPubFinal->Draw("same");
   canvasComp->SaveAs(Sfileout + "_CompPub.pdf");
   canvasComp->SaveAs(Sfileout + "_CompPub.png");
 

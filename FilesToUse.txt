@@ -35,3 +35,5 @@ Takes in input files in Yields directory
 
 YieldFit.C (to be run on gr3srv): fit the pt spectra (+ plots spectra + fits + ratio data/fit) and plots pt-integrated yields vs multiplicity classes
 Use the script script_UpLoadToServer.sh to uploaded the desired files to the gr3srv server
+
+CompareYieldFit.C: compare pt-integrated yields vs mult obtained with different fit functions + computes syst. uncertainty

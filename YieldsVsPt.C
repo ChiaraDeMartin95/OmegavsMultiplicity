@@ -278,14 +278,25 @@ void YieldsVsPt(Bool_t isSysStudy = 1,
     cout << "hCentFT0M not available " << endl;
     return;
   }
+
   hEventsFV0A = (TH1F *)dirEvt->Get("hCentFV0A");
   if (!hEventsFV0A)
   {
     cout << "hCentFV0A not available " << endl;
     return;
   }
+
   if (isMB == 1)
-    NEvents = hEvents->GetBinContent(1);
+  {
+    // NEvents = hEvents->GetBinContent(1);
+    for (Int_t b = 1; b <= hEventsFT0M->GetNbinsX(); b++)
+    {
+      if (hEventsFT0M->GetBinCenter(b) > 0 && hEventsFT0M->GetBinCenter(b) < 100)
+      {
+        NEvents += hEventsFT0M->GetBinContent(b);
+      }
+    }
+  }
   else
   {
     if (MultType == 1)
@@ -343,10 +354,10 @@ void YieldsVsPt(Bool_t isSysStudy = 1,
                               2.2, 2.4, 2.6, 2.8, 3.0,
                               3.5, 4.0, 4.5, 5.0, 6.0, 8.0};
 
-  //Float_t binpt[numPt + 1] = {0.4, 0.6, 0.8, 1.0,
-  //                            1.2, 1.4, 1.6, 1.8, 2.0,
-  //                            2.2, 2.4, 2.6, 2.8, 3.0,
-  //                            3.5, 4.0, 4.5, 5.0, 6.0, 8.0};
+  // Float_t binpt[numPt + 1] = {0.4, 0.6, 0.8, 1.0,
+  //                             1.2, 1.4, 1.6, 1.8, 2.0,
+  //                             2.2, 2.4, 2.6, 2.8, 3.0,
+  //                             3.5, 4.0, 4.5, 5.0, 6.0, 8.0};
 
   // for topo studies
   // Float_t binpt[numPt + 1] = {0.4, 0.8,
@@ -377,8 +388,8 @@ void YieldsVsPt(Bool_t isSysStudy = 1,
   {
     if (part == 6 || part == 7 || part == 8)
     {
-      //if (binpt[pt] < 0.6)
-        //continue;
+      // if (binpt[pt] < 0.6)
+      // continue;
       // if (binpt[pt] > 4)
       // continue;
     }
@@ -994,4 +1005,45 @@ void YieldsVsPt(Bool_t isSysStudy = 1,
 
   cout << "Total raw yield (signal only) " << TotYield << endl;
   cout << "Total raw yield (signal+bkg within 3sigmas) " << TotSigBkg << endl;
+  cout << "Total number of analysed events " << NEvents << endl;
+
+  TH1F *hEventsFT0MFinal = new TH1F("hEventsFT0MFinal", "hEventsFT0MFinal",100, 0, 100);
+  for (Int_t b = 1; b <= hEventsFT0MFinal->GetNbinsX(); b++)
+  {
+    counts = 0;
+    for (Int_t c = 1; c <= hEventsFT0M->GetNbinsX(); c++)
+    {
+      if (hEventsFT0M->GetBinCenter(c) > hEventsFT0MFinal->GetXaxis()->GetBinLowEdge(b) && hEventsFT0M->GetBinCenter(c) < hEventsFT0MFinal->GetXaxis()->GetBinUpEdge(b))
+      {
+        counts += hEventsFT0M->GetBinContent(c);
+      }
+    }
+    hEventsFT0MFinal->SetBinContent(b, counts);
+  }
+
+  TH1F *hEventsFV0AFinal = new TH1F("hEventsFV0AFinal", "hEventsFV0AFinal", 100, 0, 100);
+  for (Int_t b = 1; b <= hEventsFV0AFinal->GetNbinsX(); b++)
+  {
+    counts = 0;
+    for (Int_t c = 1; c <= hEventsFV0A->GetNbinsX(); c++)
+    {
+      if (hEventsFV0A->GetBinCenter(c) > hEventsFV0AFinal->GetXaxis()->GetBinLowEdge(b) && hEventsFV0A->GetBinCenter(c) < hEventsFV0AFinal->GetXaxis()->GetBinUpEdge(b))
+      {
+        counts += hEventsFV0A->GetBinContent(c);
+      }
+    }
+    hEventsFV0AFinal->SetBinContent(b, counts);
+  }
+
+  TCanvas *canvasFV0A = new TCanvas("canvasFV0A", "canvasFV0A", 1000, 800);
+  StyleCanvas(canvasFV0A, 0.14, 0.05, 0.11, 0.15);
+  StyleHisto(hEventsFV0AFinal, 0, 1.2 * hEventsFV0AFinal->GetBinContent(hEventsFV0AFinal->GetMaximumBin()), 1, 1, "FV0A Multiplicity percentile", "Counts", "hEventsFV0AFinal", 0, 0, 0, 1.4, 1.4, 1.2);
+  hEventsFV0AFinal->Draw("same");
+  canvasFV0A->SaveAs(Soutputfile + "_FV0A.pdf");
+
+  TCanvas *canvasFT0M = new TCanvas("canvasFT0M", "canvasFT0M", 1000, 800);
+  StyleCanvas(canvasFT0M, 0.14, 0.05, 0.11, 0.15);
+  StyleHisto(hEventsFT0MFinal, 0, 1.2 * hEventsFT0MFinal->GetBinContent(hEventsFT0MFinal->GetMaximumBin()), 1, 1, "FT0M Multiplicity percentile", "Counts", "hEventsFT0MFinal", 0, 0, 0, 1.4, 1.4, 1.2);
+  hEventsFT0MFinal->Draw("same");
+  canvasFT0M->SaveAs(Soutputfile + "_FT0M.pdf");
 }

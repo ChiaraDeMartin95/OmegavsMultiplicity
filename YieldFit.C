@@ -114,10 +114,10 @@ void StylePad(TPad *pad, Float_t LMargin, Float_t RMargin, Float_t TMargin, Floa
 // fits them to get pt-integrated yields
 
 void YieldFit(Int_t typefit = 3, //mT scaling, Boltzmann, Fermi-Direc, Levi
-	       Int_t part = 5,
-               TString SysPath = "_Sel6June",
+	       Int_t part = 8,
+               TString SysPath = ""/*"_Sel6June"*/,
                TString OutputDir = "PtIntegratedYields/",
-               TString year = "LHC22m_pass4_Train79153",
+	      TString year = "LHC22o_pass4_Train89684"/*"LHC22m_pass4_Train79153"*/,
                Bool_t isSysStudy = 1,
                Int_t MultType = 1, // 0: no mult for backward compatibility, 1: FT0M, 2: FV0A
                Bool_t UseTwoGauss = 0) 
@@ -165,8 +165,6 @@ void YieldFit(Int_t typefit = 3, //mT scaling, Boltzmann, Fermi-Direc, Levi
   TH1F *fHistSpectrumSistMultRatio[numMult + 1];
 
   gStyle->SetOptStat(0);
-  TH1F *hDummy = new TH1F("hDummy", "hDummy", 1000, 0, 8);
-  TH1F *hDummyRatio = new TH1F("hDummyRatio", "hDummyRatio", 1000, 0, 8);
 
   gStyle->SetLegendFillColor(0);
   gStyle->SetLegendBorderSize(0);
@@ -188,7 +186,7 @@ void YieldFit(Int_t typefit = 3, //mT scaling, Boltzmann, Fermi-Direc, Levi
 
   TLegend *LegendPub = new TLegend(0.54, 0.65, 0.95, 0.73);
   LegendPub->SetFillStyle(0);
-  LegendPub->SetTextAlign(33);
+  LegendPub->SetTextAlign(23);
   LegendPub->SetTextSize(0.025);
 
   TLine *lineat1Mult = new TLine(0, 1, 8, 1);
@@ -208,8 +206,8 @@ void YieldFit(Int_t typefit = 3, //mT scaling, Boltzmann, Fermi-Direc, Levi
     }
     else
     {
-      Smolt[m] += Form("_Mult%i-%i", MultiplicityPerc[m], MultiplicityPerc[m + 1]);
-      SmoltBis[m] += Form("%i#minus%i", MultiplicityPerc[m], MultiplicityPerc[m + 1]);
+      Smolt[m] += Form("_Mult%.1f-%.1f", MultiplicityPerc[m], MultiplicityPerc[m + 1]);
+      SmoltBis[m] += Form("%.1f#minus%.1f", MultiplicityPerc[m], MultiplicityPerc[m + 1]);
     }
     PathIn += Smolt[m];
     if (isSysStudy)
@@ -269,6 +267,11 @@ void YieldFit(Int_t typefit = 3, //mT scaling, Boltzmann, Fermi-Direc, Levi
 
   Double_t LowRange[numMult+1]= {0, 0, 0, 0, 0, 0};
   Double_t UpRange[numMult+1]= {4,4,4,4,4,4};
+  if (typefit==3){
+    for (Int_t b=0; b<= numMult; b++){
+      UpRange[b] = 8;
+    }
+  }
 
   TString Titlehhout[9] = {"kYield",
                            "kYieldStat",
@@ -350,11 +353,10 @@ void YieldFit(Int_t typefit = 3, //mT scaling, Boltzmann, Fermi-Direc, Levi
   } // end loop on multiplicity classes
 
   // draw spectra in multiplicity classes
-  Float_t ScaleFactorFinal[numMult+1] = {0};
   TString sScaleFactorFinal[numMult+1] = {};
 
-  Float_t LimSupSpectra = 9.99;
-  Float_t LimInfSpectra = 0.2 * 1e-5;
+  Float_t LimSupSpectra = 999.99;
+  Float_t LimInfSpectra = 0.2 * 1e-7;
   Float_t xTitle = 15;
   Float_t xOffset = 4;
   Float_t yTitle = 30;
@@ -368,43 +370,46 @@ void YieldFit(Int_t typefit = 3, //mT scaling, Boltzmann, Fermi-Direc, Levi
   Float_t tickX = 0.035;
   Float_t tickY = 0.035;
 
+  TH1F *hDummy = new TH1F("hDummy", "hDummy", 1000, 0, 8);
+  canvasPtSpectra->cd();
   SetFont(hDummy);
   StyleHistoYield(hDummy, LimInfSpectra, LimSupSpectra, 1, 1, TitleXPt, TitleYYield, "", 1, 1.15, 1.6);
   SetHistoTextSize(hDummy, xTitle, xLabel, xOffset, xLabelOffset, yTitle, yLabel, yOffset, yLabelOffset);
   SetTickLength(hDummy, tickX, tickY);
-  canvasPtSpectra->cd();
   pad1->Draw();
   pad1->cd();
   gPad->SetLogy();
-  hDummy->DrawClone("same");
+  hDummy->Draw("");
 
-  for (Int_t m = numMult; m >= 0; m--)
-  {
+  for (Int_t m = numMult; m >= 0; m--) {
+    if (m == numMult)      {
+      ColorMult[m] = ColorMB;
+      MarkerMult[m] = MarkerMB;
+      SizeMult[m] = SizeMB;
+    }
     fHistSpectrumSistScaled[m] = (TH1F *)fHistSpectrumSist[m]->Clone("fHistSpectrumSistScaled_" + Smolt[m]);
     fHistSpectrumStatScaled[m] = (TH1F *)fHistSpectrumStat[m]->Clone("fHistSpectrumStatScaled_" + Smolt[m]);
-    if (m==numMult){
-      ScaleFactorFinal[m] = pow(2, 5);
-    } else {
-      ScaleFactorFinal[m] = ScaleFactor[m];
-    }
-    fHistSpectrumStatScaled[m]->Scale(ScaleFactorFinal[m]);
-    fHistSpectrumSistScaled[m]->Scale(ScaleFactorFinal[m]);
+    fHistSpectrumStatScaled[m]->Scale(ScaleFactor[m]);
+    fHistSpectrumSistScaled[m]->Scale(ScaleFactor[m]);
     fit_pwgfunc_Scaled[m] = (TF1*)fit_pwgfunc[m]->Clone(namepwgfunc[m] + "_Scaled");
     fit_pwgfunc_ScaledBis[m] = (TF1*)fit_pwgfuncBis[m]->Clone(namepwgfunc[m] + "_ScaledBis");
     fit_pwgfunc_Scaled[m]->SetLineColor(ColorMult[m]);
-    fit_pwgfunc_Scaled[m]->SetParameter(0, fit_pwgfunc[m]->GetParameter(0) * ScaleFactorFinal[m]);
-    fit_pwgfunc_ScaledBis[m]->SetParameter(0, fit_pwgfuncBis[m]->GetParameter(0) * ScaleFactorFinal[m]);
+    fit_pwgfunc_Scaled[m]->SetParameter(0, fit_pwgfunc[m]->GetParameter(0) * ScaleFactor[m]);
+    fit_pwgfunc_ScaledBis[m]->SetParameter(0, fit_pwgfuncBis[m]->GetParameter(0) * ScaleFactor[m]);
     for (Int_t b = 1; b <= fHistSpectrumStat[m]->GetNbinsX(); b++)
     {
       // cout << "bin " << b << " " << fHistSpectrumStat[m]->GetBinContent(b) << "+-" << fHistSpectrumStat[m]->GetBinError(b) << endl;
       // cout << "bin " << b << " " << fHistSpectrumSist[m]->GetBinContent(b) << "+-" << fHistSpectrumSist[m]->GetBinError(b) << endl;
       // cout << "bin " << b << " " << fHistSpectrumStatScaled[m]->GetBinContent(b) << "+-" << fHistSpectrumStatScaled[m]->GetBinError(b) << endl;
     }
-    SetFont(fHistSpectrumStatScaled[m]);
-    SetFont(fHistSpectrumSistScaled[m]);
-    StyleHistoYield(fHistSpectrumStatScaled[m], LimInfSpectra, LimSupSpectra, ColorMult[m], MarkerMult[m], TitleXPt, TitleYYield, "", SizeMult[m], 1.15, 1.6);
-    StyleHistoYield(fHistSpectrumSistScaled[m], LimInfSpectra, LimSupSpectra, ColorMult[m], MarkerMult[m], TitleXPt, TitleYYield, "", SizeMult[m], 1.15, 1.6);
-    SetHistoTextSize(fHistSpectrumStatScaled[m], xTitle, xLabel, xOffset, xLabelOffset, yTitle, yLabel, yOffset, yLabelOffset);
+    fHistSpectrumStatScaled[m]->SetMarkerColor(ColorMult[m]);
+    fHistSpectrumStatScaled[m]->SetLineColor(ColorMult[m]);
+    fHistSpectrumStatScaled[m]->SetMarkerStyle(MarkerMult[m]);
+    fHistSpectrumStatScaled[m]->SetMarkerSize(SizeMult[m]);
+    fHistSpectrumSistScaled[m]->SetMarkerColor(ColorMult[m]);
+    fHistSpectrumSistScaled[m]->SetLineColor(ColorMult[m]);
+    fHistSpectrumSistScaled[m]->SetMarkerStyle(MarkerMult[m]);
+    fHistSpectrumSistScaled[m]->SetMarkerSize(SizeMult[m]);
     fHistSpectrumStatScaled[m]->Draw("same e0x0");
     fHistSpectrumSistScaled[m]->SetFillStyle(0);
     //fHistSpectrumSistScaled[m]->Draw("same e2");
@@ -413,7 +418,7 @@ void YieldFit(Int_t typefit = 3, //mT scaling, Boltzmann, Fermi-Direc, Levi
     if (m == numMult)
       legendfit->AddEntry(fit_pwgfunc_Scaled[m], nameFit[typefit], "l");
     fHistSpectrumSistScaledForLegend[m] = (TH1F *)fHistSpectrumSistScaled[m]->Clone("fHistSpectrumSistScaledForLegend_" + Smolt[m]);
-    sScaleFactorFinal[m] = Form(" (x2^{%i})", int(log2(ScaleFactorFinal[m])));
+    sScaleFactorFinal[m] = Form(" (x2^{%i})", int(log2(ScaleFactor[m])));
     legendAllMult->AddEntry(fHistSpectrumSistScaledForLegend[m], SmoltBis[m] + "%" + sScaleFactorFinal[m] + " ", "pef");
   } // end loop on mult
   legendfit->Draw("");
@@ -441,14 +446,15 @@ void YieldFit(Int_t typefit = 3, //mT scaling, Boltzmann, Fermi-Direc, Levi
   rettaUno->FixParameter(0,1);
 
   TString TitleYSpectraRatio = "Data/fit";
+  canvasPtSpectra->cd();
+  TH1F *hDummyRatio = new TH1F("hDummyRatio", "hDummyRatio", 1000, 0, 8);
   SetFont(hDummyRatio);
   StyleHistoYield(hDummyRatio, LimInfMultRatio, LimSupMultRatio, 1, 1, TitleXPt, TitleYSpectraRatio, "", 1, 1.15, YoffsetSpectraRatio);
   SetHistoTextSize(hDummyRatio, xTitleR, xLabelR, xOffsetR, xLabelOffsetR, yTitleR, yLabelR, yOffsetR, yLabelOffsetR);
   SetTickLength(hDummyRatio, tickXR, tickYR);
-  canvasPtSpectra->cd();
   padL1->Draw();
   padL1->cd();
-  hDummyRatio->DrawClone("same");
+  hDummyRatio->Draw("");
 
   for (Int_t m = numMult; m >= 0; m--)
   {
@@ -473,7 +479,7 @@ void YieldFit(Int_t typefit = 3, //mT scaling, Boltzmann, Fermi-Direc, Levi
 
 
   Float_t LimInfYield = 0;
-  Float_t LimSupYield = 0.003;
+  Float_t LimSupYield = 0.01;
   Float_t YoffsetYield = 2;
 
   TCanvas *canvasYield = new TCanvas("canvasYield", "canvasYield", 900, 700);
@@ -511,11 +517,24 @@ void YieldFit(Int_t typefit = 3, //mT scaling, Boltzmann, Fermi-Direc, Levi
   
   //taken from HEP data; INEL > 0, Table 11a
   TH1F *hYieldPubStat = new TH1F("hYieldPubStat", "hYieldPubStat", numMult+1, 0, numMult+1);
-  hYieldPubStat->SetBinContent(numMult+1, 0.0024070792/2);
-  hYieldPubStat->SetBinError(numMult+1, 0.0000630865/2);
   TH1F *hYieldPubSist = new TH1F("hYieldPubSist", "hYieldPubSist", numMult+1, 0, numMult+1);
-  hYieldPubSist->SetBinContent(numMult+1, 0.0024070792/2);
-  hYieldPubSist->SetBinError(numMult+1, 0.0002274319/2);
+  if (part==6 || part==7) {
+    hYieldPubStat->SetBinContent(numMult+1, 0.0024070792/2); 
+    hYieldPubSist->SetBinContent(numMult+1, 0.0024070792/2);
+  }
+  else if (part==8) {
+    hYieldPubStat->SetBinContent(numMult+1, 0.0024070792); 
+    hYieldPubSist->SetBinContent(numMult+1, 0.0024070792);
+  }
+  if (part==6 || part==7){
+    hYieldPubStat->SetBinError(numMult+1, 0.0000630865/2);
+    hYieldPubSist->SetBinError(numMult+1, 0.0002274319/2);
+  }
+  else if (part==8){
+    hYieldPubStat->SetBinError(numMult+1, 0.0000630865);
+    hYieldPubSist->SetBinError(numMult+1, 0.0002274319);
+  }
+
   for (Int_t m = numMult; m >= 0; m--){
     if (m==numMult) continue;
     hYieldPubStat->SetBinContent(m+1, -999);
@@ -564,6 +583,14 @@ void YieldFit(Int_t typefit = 3, //mT scaling, Boltzmann, Fermi-Direc, Levi
   canvasChi2->SaveAs(stringoutpdf+ "_Chi2vsPerc.png");
   canvasTemp->SaveAs(stringoutpdf+ "_TempvsPerc.png");
   canvasFracExtrYield->SaveAs(stringoutpdf+ "_FracExtrYieldvsPerc.png");
+
+  fileout->cd();
+  hYield->Write();
+  hYieldPubStat->Write();
+  hYieldPubSist->Write();
+  hChi2->Write();
+  hTemp->Write();
+  hFracExtrYield->Write();
   fileout->Close();
 
   cout << "\nStarting from the files (for the different mult): " << PathIn << endl;

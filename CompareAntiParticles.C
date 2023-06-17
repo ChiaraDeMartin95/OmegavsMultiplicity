@@ -68,13 +68,11 @@ void StyleHisto(TH1F *histo, Float_t Low, Float_t Up, Int_t color, Int_t style, 
 TString titlePt = "p_{T} (GeV/c)";
 TString titleYield = "1/N_{ev} dN/dp_{T}";
 
-TString TitleInvMass[numPart] = {"(#pi^{+}, #pi^{-}) invariant mass (GeV/#it{c}^{2})", "(p, #pi^{-}) invariant mass (GeV/#it{c}^{2})", "(#bar{p}, #pi^{-}) invariant mass (GeV/#it{c}^{2})", "(#Lambda, #pi^{-}) invariant mass (GeV/#it{c}^{2})"};
-TString namehisto[numPart] = {"h3dMassK0Short", "", "", "hCascMinusInvMassvsPt", "hCascPlusInvMassvsPt", "hCascMinusInvMassvsPt", "hCascPlusInvMassvsPt"};
-Float_t YLowMean[numPart] = {0.485, 1.110, 1.110, 1.316, 1.316, 1.664, 1.664};
-Float_t YUpMean[numPart] = {0.51, 1.130, 1.130, 1.327, 1.327, 1.68, 1.68};
-Float_t YLowSigma[numPart] = {0.0002, 0.0002, 0.0002, 0.0002, 0.0002, 0.0002, 0.0002};
-Float_t YUpSigma[numPart] = {0.025, 0.015, 0.015, 0.015, 0.015, 0.015, 0.015};
-Float_t YLowPurity[numPart] = {0, 0, 0, 0, 0, 0, 0};
+Float_t YLowMean[numPart] = {0.485, 1.110, 1.110, 1.316, 1.316, 1.316, 1.664, 1.664, 1.664};
+Float_t YUpMean[numPart] = {0.51, 1.130, 1.130, 1.327, 1.327, 1.327, 1.68, 1.68, 1.68};
+Float_t YLowSigma[numPart] = {0.0002, 0.0002, 0.0002, 0.0002, 0.0002, 0.0002, 0.0002, 0.0002, 0.0002};
+Float_t YUpSigma[numPart] = {0.025, 0.015, 0.015, 0.015, 0.015, 0.015, 0.015, 0.015, 0.015};
+Float_t YLowPurity[numPart] = {0, 0, 0, 0, 0, 0, 0, 0, 0};
 
 Float_t YLow[numPart] = {0};
 Float_t YUp[numPart] = {0};
@@ -85,10 +83,10 @@ Float_t YUpRatio[numChoice] = {1.02, 1.2, 1.2, 1.4, 1.2, 1.2, 1.2};
 void CompareAntiParticles(Int_t Choice = 0,
                           TString SysPath = "",
                           TString OutputDir = "Yields",
-                          TString year = "LHC22m_pass4_Train79153",
-                          Int_t part = 5,
+                          TString year = "LHC22o_pass4_Train89684" /*"LHC22m_pass4_Train79153"*/,
+                          Int_t part = 6,
                           Bool_t isSysStudy = 1,
-                          Int_t MultType = 0, // 0: no mult for backward compatibility, 1: FT0M, 2: FV0M
+                          Int_t MultType = 1, // 0: no mult for backward compatibility, 1: FT0M, 2: FV0M
                           Bool_t isMB = 1,
                           Int_t mul = 0,
                           Bool_t UseTwoGauss = 0)
@@ -99,9 +97,9 @@ void CompareAntiParticles(Int_t Choice = 0,
     cout << "Multiplciity out of range" << endl;
     return;
   }
-  if (part < 3 || part == 4 || part == 6)
+  if (part < 3 || part == 4 || part == 5 || part == 7 || part == 8)
   {
-    cout << "this value of part is not specified, choose 3 (Xi) or 5 (Omega) " << endl;
+    cout << "this value of part is not specified, choose 3 (Xi) or 6 (Omega) " << endl;
     return;
   }
 
@@ -181,7 +179,7 @@ void CompareAntiParticles(Int_t Choice = 0,
     if (isMB)
       SPathIn += "_Mult0-100";
     else
-      SPathIn += Form("_Mult%i-%i", MultiplicityPerc[mul], MultiplicityPerc[mul + 1]);
+      SPathIn += Form("_Mult%.1f-%.1f", MultiplicityPerc[mul], MultiplicityPerc[mul + 1]);
     if (Choice == 5)
     {
       SPathIn = "Efficiency/eff6June";
@@ -192,12 +190,17 @@ void CompareAntiParticles(Int_t Choice = 0,
         SPathIn = "Yields/YieldEffCorr" + year + "_" + Spart[part];
       else if (ifile == 1)
         SPathIn = "Yields/YieldEffCorr" + year + "_" + Spart[part + 1];
+      SPathIn += IsOneOrTwoGauss[UseTwoGauss];
+      if (isMB)
+        SPathIn += "_Mult0-100";
+      else
+        SPathIn += Form("_Mult%.1f-%.1f", MultiplicityPerc[mul], MultiplicityPerc[mul + 1]);
     }
     if (isSysStudy && Choice != 5)
       SPathIn += SysPath;
     SPathInFinal[ifile] = SPathIn;
-    if (Choice != 6 && Choice != 5)
-      SPathInFinal[ifile] += "_FewPtBins";
+    // if (Choice != 6 && Choice != 5)
+    // SPathInFinal[ifile] += "_FewPtBins";
     SPathInFinal[ifile] += ".root";
 
     cout << "Getting file..." << SPathInFinal[ifile] << endl;
@@ -272,9 +275,12 @@ void CompareAntiParticles(Int_t Choice = 0,
 
     for (Int_t b = 1; b <= histoRatio[ifile]->GetNbinsX(); b++)
     {
-      if (Choice==5) histo[ifile]->SetBinError(b, 0); 
-      if (Choice==5) histoParticle->SetBinError(b, 0); 
-      if (Choice==5) histoRatio[ifile]->SetBinError(b, 0); 
+      if (Choice == 5)
+        histo[ifile]->SetBinError(b, 0);
+      if (Choice == 5)
+        histoParticle->SetBinError(b, 0);
+      if (Choice == 5)
+        histoRatio[ifile]->SetBinError(b, 0);
       // cout << "Num: " << histo->GetBinContent(b) << endl;
       // cout << "Denom " << histoParticle->GetBinContent(b) << endl;
       // cout << "Ratio " << histoRatio->GetBinContent(b) << endl;

@@ -113,9 +113,9 @@ void StylePad(TPad *pad, Float_t LMargin, Float_t RMargin, Float_t TMargin, Floa
 
 void CompareYieldFitF(
     Int_t part = 8,
-    TString SysPath = ""/*"_Sel6June"*/,
+    TString SysPath = "" /*"_Sel6June"*/,
     TString OutputDir = "CompareFitFunctions/",
-    TString year = "LHC22o_pass4_Train89684"/*"LHC22m_pass4_Train79153"*/,
+    TString year = "LHC22o_pass4_Train89684" /*"LHC22m_pass4_Train79153"*/,
     Bool_t isSysStudy = 1,
     Int_t MultType = 1, // 0: no mult for backward compatibility, 1: FT0M, 2: FV0A
     Bool_t UseTwoGauss = 0)
@@ -130,18 +130,6 @@ void CompareYieldFitF(
   // filein
   TString PathIn = "";
   TFile *fileIn;
-
-  // fileout name
-  TString stringout;
-  TString stringoutpdf;
-  stringout = OutputDir + "CompareFitF_" + year;
-  stringout += Spart[part];
-  stringout += IsOneOrTwoGauss[UseTwoGauss];
-  if (isSysStudy)
-    stringout += SysPath;
-  stringoutpdf = stringout;
-  stringout += ".root";
-  TFile *fileout = new TFile(stringout, "RECREATE");
 
   gStyle->SetOptStat(0);
   gStyle->SetLegendFillColor(0);
@@ -171,9 +159,9 @@ void CompareYieldFitF(
   LegendTitle->AddEntry("", "pp, #sqrt{#it{s}} = 13.6 TeV", "");
   LegendTitle->AddEntry("", NamePart[part] + ", |y| < 0.5", "");
 
-  TLegend *LegendPub = new TLegend(0.54, 0.65, 0.95, 0.73);
+  TLegend *LegendPub = new TLegend(0.58, 0.65, 0.95, 0.73);
   LegendPub->SetFillStyle(0);
-  LegendPub->SetTextAlign(33);
+  LegendPub->SetTextAlign(32);
   LegendPub->SetTextSize(0.025);
 
   TLine *lineat1Mult = new TLine(0, 1, numMult + 1, 1);
@@ -278,15 +266,6 @@ void CompareYieldFitF(
   LegendTitle->Draw("");
   legendfitSummary->Draw("same");
 
-  canvasYield->SaveAs(stringoutpdf + "_YieldsvsPerc.pdf");
-  canvasChi2->SaveAs(stringoutpdf + "_Chi2vsPerc.pdf");
-  canvasTemp->SaveAs(stringoutpdf + "_TempvsPerc.pdf");
-  canvasFracExtrYield->SaveAs(stringoutpdf + "_FracExtrYieldvsPerc.pdf");
-  canvasYield->SaveAs(stringoutpdf + "_YieldsvsPerc.png");
-  canvasChi2->SaveAs(stringoutpdf + "_Chi2vsPerc.png");
-  canvasTemp->SaveAs(stringoutpdf + "_TempvsPerc.png");
-  canvasFracExtrYield->SaveAs(stringoutpdf + "_FracExtrYieldvsPerc.png");
-
   // compute systematic uncertainty associated to choice of fit function
   TCanvas *canvasRatioToTsallis = new TCanvas("canvasRatioToTsallis", "canvasRatioToTsallis", 800, 600);
   StyleCanvas(canvasRatioToTsallis, 0.05, 0.15, 0.2, 0.02);
@@ -354,12 +333,31 @@ void CompareYieldFitF(
   hRelUncFitChoice->Draw("same");
   LegendTitle->Draw("");
 
+  // fileout name
+  TString stringout;
+  TString stringoutpdf;
+  stringout = OutputDir + "CompareFitF_" + year;
+  stringout += Spart[part];
+  stringout += IsOneOrTwoGauss[UseTwoGauss];
+  if (isSysStudy)
+    stringout += SysPath;
+  stringoutpdf = stringout;
+  stringout += ".root";
+  TFile *fileout = new TFile(stringout, "RECREATE");
+  hRelUncFitChoice->Write();
+  fileout->Close();
+
+  canvasYield->SaveAs(stringoutpdf + "_YieldsvsPerc.pdf");
+  canvasChi2->SaveAs(stringoutpdf + "_Chi2vsPerc.pdf");
+  canvasTemp->SaveAs(stringoutpdf + "_TempvsPerc.pdf");
+  canvasFracExtrYield->SaveAs(stringoutpdf + "_FracExtrYieldvsPerc.pdf");
+  canvasYield->SaveAs(stringoutpdf + "_YieldsvsPerc.png");
+  canvasChi2->SaveAs(stringoutpdf + "_Chi2vsPerc.png");
+  canvasTemp->SaveAs(stringoutpdf + "_TempvsPerc.png");
+  canvasFracExtrYield->SaveAs(stringoutpdf + "_FracExtrYieldvsPerc.png");
   canvasRatioToTsallis->SaveAs(stringoutpdf + "_RatioToTsallis.pdf");
   canvasNSigmaToTsallis->SaveAs(stringoutpdf + "_NSigmaToTsallis.pdf");
   canvasRelUncFitChoice->SaveAs(stringoutpdf + "_RelUncFitChoice.pdf");
-
-  hRelUncFitChoice->Write();
-  fileout->Close();
 
   cout << "\nStarting from the files (for the different fit types): " << PathIn << endl;
 

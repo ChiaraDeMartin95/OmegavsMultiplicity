@@ -132,12 +132,22 @@ void PlotSpectraRatios(Int_t part = 6,
   TString Smolt[numMult + 1];
   TString SmoltBis[numMult + 1];
   TString sScaleFactorFinal[numMult + 1];
+  Float_t ScaleFactorFinal[numMult + 1];
 
   TString SErrorSpectrum[3] = {"stat.", "syst. uncorr.", "syst. corr."};
 
   // filein
   TString PathIn;
+  TString PathInSist;
+  PathInSist = "SystematicErrors/TotalSysError_" + year + "_";
+  PathInSist += Spart[part];
+  // PathInSist += Smolt[numMult];
+  if (isSysStudy)
+    PathInSist += SysPath;
+  PathInSist += ".root";
+
   TFile *fileIn[numMult + 1];
+  TFile *fileInSist[numMult + 1];
 
   // fileout name
   TString stringout;
@@ -163,6 +173,7 @@ void PlotSpectraRatios(Int_t part = 6,
 
   TH1F *fHistSpectrumStat[numMult + 1];
   TH1F *fHistSpectrumSist[numMult + 1];
+  TH1F *fHistSpectrumRelErrSist[numMult + 1];
   TH1F *fHistSpectrumStatScaled[numMult + 1];
   TH1F *fHistSpectrumSistScaled[numMult + 1];
   TH1F *fHistSpectrumStatScaledB[numMult + 1];
@@ -220,8 +231,6 @@ void PlotSpectraRatios(Int_t part = 6,
     cout << "Path in : " << PathIn << endl;
 
     fileIn[m] = TFile::Open(PathIn);
-    fHistSpectrumSist[m] = (TH1F *)fileIn[m]->Get("histoYieldCorr");
-    fHistSpectrumSist[m]->SetName("histoSpectrumSist_" + Smolt[m]);
     fHistSpectrumStat[m] = (TH1F *)fileIn[m]->Get("histoYieldCorr");
     fHistSpectrumStat[m]->SetName("histoSpectrumStat_" + Smolt[m]);
     if (!fHistSpectrumStat[m])
@@ -229,16 +238,28 @@ void PlotSpectraRatios(Int_t part = 6,
       cout << " no hist spectrum stat" << endl;
       return;
     }
-    if (!fHistSpectrumSist[m])
+
+    cout << "PathInSist: " << PathInSist << endl;
+    fileInSist[m] = TFile::Open(PathInSist);
+    // fHistSpectrumRelErrSist[m] = (TH1F *)fileInSist[m]->Get("hTotalSyst");
+    fHistSpectrumRelErrSist[m] = (TH1F *)fileInSist[m]->Get("histoSpectrumRelErrSist" + Smolt[m]);
+    fHistSpectrumRelErrSist[m]->SetName("histoRelSist_" + Smolt[m]);
+
+    if (!fHistSpectrumRelErrSist[m])
     {
-      cout << " no hist spectrum sist" << endl;
+      cout << " no hist spectrum rel err sist" << endl;
       return;
+    }
+    fHistSpectrumSist[m] = (TH1F *)fHistSpectrumStat[m]->Clone("histoSpectrumSist_" + Smolt[m]);
+    for (Int_t i = 1; i <= fHistSpectrumSist[m]->GetNbinsX(); i++)
+    {
+      fHistSpectrumSist[m]->SetBinError(i, fHistSpectrumStat[m]->GetBinContent(i) * fHistSpectrumRelErrSist[m]->GetBinContent(i));
     }
   } // end loop on mult
 
   // draw spectra in multiplicity classes
   // Float_t LimSupSpectra = 9.99;
-  Float_t LimSupSpectra = 999.99;
+  Float_t LimSupSpectra = 9999.99;
   Float_t LimInfSpectra = 0.2 * 1e-7;
   Float_t xTitle = 15;
   Float_t xOffset = 4;
@@ -269,24 +290,24 @@ void PlotSpectraRatios(Int_t part = 6,
 
   for (Int_t m = numMult; m >= 0; m--)
   {
+    ScaleFactorFinal[m] = ScaleFactor[m];
     if (m == numMult)
     {
       ColorMult[m] = ColorMB;
       MarkerMult[m] = MarkerMB;
       SizeMult[m] = SizeMB;
+      ScaleFactorFinal[m] = ScaleFactorMB;
     }
     fHistSpectrumSistScaled[m] = (TH1F *)fHistSpectrumSist[m]->Clone("fHistSpectrumSistScaled_" + Smolt[m]);
     fHistSpectrumStatScaled[m] = (TH1F *)fHistSpectrumStat[m]->Clone("fHistSpectrumStatScaled_" + Smolt[m]);
-    fHistSpectrumStatScaled[m]->Scale(ScaleFactor[m]);
-    fHistSpectrumSistScaled[m]->Scale(ScaleFactor[m]);
+    fHistSpectrumStatScaled[m]->Scale(ScaleFactorFinal[m]);
+    fHistSpectrumSistScaled[m]->Scale(ScaleFactorFinal[m]);
     for (Int_t b = 1; b <= fHistSpectrumStat[m]->GetNbinsX(); b++)
     {
       // cout << "bin " << b << " " << fHistSpectrumStat[m]->GetBinContent(b) << "+-" << fHistSpectrumStat[m]->GetBinError(b) << endl;
       // cout << "bin " << b << " " << fHistSpectrumSist[m]->GetBinContent(b) << "+-" << fHistSpectrumSist[m]->GetBinError(b) << endl;
       // cout << "bin " << b << " " << fHistSpectrumStatScaled[m]->GetBinContent(b) << "+-" << fHistSpectrumStatScaled[m]->GetBinError(b) << endl;
     }
-    SetFont(fHistSpectrumStatScaled[m]);
-    SetFont(fHistSpectrumSistScaled[m]);
     fHistSpectrumStatScaled[m]->SetMarkerColor(ColorMult[m]);
     fHistSpectrumStatScaled[m]->SetLineColor(ColorMult[m]);
     fHistSpectrumStatScaled[m]->SetMarkerStyle(MarkerMult[m]);
@@ -297,9 +318,9 @@ void PlotSpectraRatios(Int_t part = 6,
     fHistSpectrumSistScaled[m]->SetMarkerSize(SizeMult[m]);
     fHistSpectrumStatScaled[m]->Draw("same e0x0");
     fHistSpectrumSistScaled[m]->SetFillStyle(0);
-    // fHistSpectrumSistScaled[m]->Draw("same e2");
+    fHistSpectrumSistScaled[m]->Draw("same e2");
     fHistSpectrumSistScaledForLegend[m] = (TH1F *)fHistSpectrumSistScaled[m]->Clone("fHistSpectrumSistScaledForLegend_" + Smolt[m]);
-    sScaleFactorFinal[m] = Form(" (x2^{%i})", int(log2(ScaleFactor[m])));
+    sScaleFactorFinal[m] = Form(" (x2^{%i})", int(log2(ScaleFactorFinal[m])));
     legendAllMult->AddEntry(fHistSpectrumSistScaledForLegend[m], SmoltBis[m] + "%" + sScaleFactorFinal[m] + " ", "pef");
   } // end loop on mult
   LegendTitle->Draw("");
@@ -342,11 +363,13 @@ void PlotSpectraRatios(Int_t part = 6,
     ErrRatioCorr(fHistSpectrumStat[m], fHistSpectrumStat[ChosenMult], fHistSpectrumStatMultRatio[m], 0);
     ErrRatioCorr(fHistSpectrumSist[m], fHistSpectrumSist[ChosenMult], fHistSpectrumSistMultRatio[m], 0);
     fHistSpectrumStatMultRatio[m]->GetYaxis()->SetRangeUser(LimInfMultRatio, LimSupMultRatio);
+    fHistSpectrumSistMultRatio[m]->GetYaxis()->SetRangeUser(LimInfMultRatio, LimSupMultRatio);
     for (Int_t b = 1; b <= fHistSpectrumStat[m]->GetNbinsX(); b++)
     {
       // cout << "bin " << b << " " << fHistSpectrumStat[m]->GetBinContent(b) << endl;
       // cout << "bin " << b << " " << fHistSpectrumStat[ChosenMult]->GetBinContent(b) << endl;
       // cout << "bin " << b << " " << fHistSpectrumStatMultRatio[m]->GetBinContent(b) << endl;
+      // cout << "bin " << b << " " << fHistSpectrumSistMultRatio[m]->GetBinError(b) << endl;
     }
     fHistSpectrumStatMultRatio[m]->SetMarkerColor(ColorMult[m]);
     fHistSpectrumStatMultRatio[m]->SetLineColor(ColorMult[m]);
@@ -361,14 +384,15 @@ void PlotSpectraRatios(Int_t part = 6,
     {
       fHistSpectrumStatMultRatio[m]->Draw("same e0x0");
       fHistSpectrumSistMultRatio[m]->SetFillStyle(0);
-      // fHistSpectrumSistMultRatio[m]->Draw("same e2");
+      fHistSpectrumSistMultRatio[m]->Draw("same e2");
     }
 
   } // end loop on mult
   fileout->Close();
   canvasPtSpectra->SaveAs(stringoutpdf + ".pdf");
   canvasPtSpectra->SaveAs(stringoutpdf + ".png");
-  cout << "\nStarting from the files (for the different mult): " << PathIn << endl;
+  cout << "\nStarting from the files (for the different mult): " << PathIn << " and PathInSist: " << PathInSist << endl;
 
   cout << "\nI have created the file:\n " << stringout << endl;
+  cout << "WARNING!! file of syst error is always the 0-100% one" << endl;
 }

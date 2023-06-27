@@ -83,22 +83,22 @@ TString CutLabelSummary[25] = {"MassWin", "y", "EtaDau", "dcapostopv", "dcanegto
                                "CascCosPA", "V0CosPA", "DCACascDau", "DCAV0Dau", "rCasc", "rV0", "DCAV0ToPV",
                                "LambdaMass", "TPCPr", "TPCPi", "TOFPr", "TOFPi", "TPCBach",
                                "TOFBach", "proplifetime", "rejcomp", "ptthrtof"};
-// cascospa, dca casc dau, dcabachtopv, dcapostopv, dcanegtopv, lambdamass, rejcomp, nsigmatpcKa, cascradius, v0radius, dcav0dau, v0cospa, casclifetime
-Int_t Bin[] = {7, 9, 6, 4, 5, 14, 22, 19, 11, 12, 10, 8, 21};
+// cascospa, dca casc dau, dcabachtopv, dcapostopv, dcanegtopv, lambdamass, rejcomp, nsigmatpcKa, cascradius, v0radius, dcav0dau, v0cospa, casclifetime, bachbaryon, dcabachbar
+Int_t Bin[] = {7, 9, 6, 4, 5, 14, 22, 19, 11, 12, 10, 8, 21, 24, 25};
 
 // Float_t YLowRatio[numChoice] = {0.98, 0, 0.9, 0.6, 0.6};
 // Float_t YUpRatio[numChoice] = {1.02, 1.2, 1.5, 1.2, 1.2};
 Float_t YLowRatio[numChoice] = {0.98, 0.8, 0.9, 0.8, 0.9};
 Float_t YUpRatio[numChoice] = {1.02, 1.2, 1.2, 1.1, 1.2};
 
-void CompareYields(Int_t itopovar = 2, // cospa, dcacascdau, dcabachtopv, dcapostopv, dcanegtopv, lambdamass, rejcomp, nsigmatpcKa, cascradius, v0radius, dcav0dau, v0cospa, casclifetime
+void CompareYields(Int_t itopovar = 2, // cospa, dcacascdau, dcabachtopv, dcapostopv, dcanegtopv, lambdamass, rejcomp, nsigmatpcKa, cascradius, v0radius, dcav0dau, v0cospa, casclifetime, cosbachbaryon, dcabachbar
                    Int_t Choice = 0,
                    TString SysPath = "",
                    TString OutputDir = "CompareTopo",
-                   TString year = "LHC22m_pass4_Train79153",
-                   Int_t part = 5,
+                   TString year = "LHC22o_pass4_Train89684" /*"LHC22m_pass4_Train79153"*/,
+                   Int_t part = 8,
                    Bool_t isSysStudy = 1,
-                   Int_t MultType = 0, // 0: no mult for backward compatibility, 1: FT0M, 2: FV0M
+                   Int_t MultType = 1, // 0: no mult for backward compatibility, 1: FT0M, 2: FV0M
                    Bool_t isMB = 1,
                    Int_t mul = 0,
                    Bool_t UseTwoGauss = 0)
@@ -109,10 +109,14 @@ void CompareYields(Int_t itopovar = 2, // cospa, dcacascdau, dcabachtopv, dcapos
     cout << "Multiplciity out of range" << endl;
     return;
   }
+  if (MultType == 0 && (part == 5 || part == 8))
+  { // pos + neg cascades
+    cout << "No backward compatibility for this case" << endl;
+    return;
+  }
   if (part < 3)
   {
     cout << "this value of part is not specified, choose 3 - 4 (Xi) or 5 - 6  (Omega) " << endl;
-    return;
   }
 
   TString SPathIn;
@@ -123,7 +127,7 @@ void CompareYields(Int_t itopovar = 2, // cospa, dcacascdau, dcabachtopv, dcapos
   if (isMB)
     SPathIn += "_Mult0-100";
   else
-    SPathIn += Form("_Mult%i-%i", MultiplicityPerc[mul], MultiplicityPerc[mul + 1]);
+    SPathIn += Form("_Mult%.1f-%.1f", MultiplicityPerc[mul], MultiplicityPerc[mul + 1]);
   SPathIn += "_" + TopoVar[itopovar];
 
   TH1F *histo[numFiles];
@@ -189,7 +193,6 @@ void CompareYields(Int_t itopovar = 2, // cospa, dcacascdau, dcabachtopv, dcapos
   {
     numFilesEff++;
     SPathInFinal[ifile] = SPathIn + Form("%i", ifile);
-    SPathInFinal[ifile] += "_FewPtBins";
     SPathInFinal[ifile] += ".root";
     filein[ifile] = new TFile(SPathInFinal[ifile], "");
     // cout << "Getting file..." << SPathInFinal[ifile] << endl;
@@ -229,6 +232,10 @@ void CompareYields(Int_t itopovar = 2, // cospa, dcacascdau, dcabachtopv, dcapos
       continue; // v0cospa
     if (itopovar == 12 && ifile > 6)
       continue; // cascproplifetime
+    if (itopovar == 13 && ifile > 7)
+      continue; // cosbachbaryon
+    if (itopovar == 14 && ifile > 7)
+      continue; // dcabachbaryon
     numFilesEffBis++;
     if (Choice == 0)
     {
@@ -315,7 +322,7 @@ void CompareYields(Int_t itopovar = 2, // cospa, dcacascdau, dcabachtopv, dcapos
     histo[ifile]->Draw("same");
     if (Choice == 0)
       lineMass->DrawClone("same");
-    legend->AddEntry(histo[ifile], TopoVarSigned[itopovar] + Form("%.3f", CutValue[ifile]), "pl");
+    legend->AddEntry(histo[ifile], TopoVarSigned[itopovar] + Form("%.4f", CutValue[ifile]), "pl");
     if (ifile == numFilesEffBis - 1)
       legend->Draw("");
 

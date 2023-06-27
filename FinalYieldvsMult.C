@@ -122,12 +122,13 @@ void StylePad(TPad *pad, Float_t LMargin, Float_t RMargin, Float_t TMargin, Floa
 
 void FinalYieldvsMult(
     Int_t part = 8,
-    TString SysPath = "" /*"_Sel6June"*/,
+    TString SysPath = "_Sel23June" /*"_Sel6June"*/,
+    Bool_t isBkgParab = 1,
     TString OutputDir = "PtIntegratedYields/",
     TString year = "LHC22o_pass4_Train89684" /*"LHC22m_pass4_Train79153"*/,
     Bool_t isSysStudy = 1,
     Int_t MultType = 1, // 0: no mult for backward compatibility, 1: FT0M, 2: FV0A
-    Bool_t UseTwoGauss = 0)
+    Bool_t UseTwoGauss = 1)
 {
 
   // multiplicity related variables
@@ -148,6 +149,7 @@ void FinalYieldvsMult(
   stringout = OutputDir + "FinalYieldvsMult_" + year;
   stringout += Spart[part];
   stringout += IsOneOrTwoGauss[UseTwoGauss];
+  stringout += SIsBkgParab[isBkgParab];
   if (isSysStudy)
     stringout += SysPath;
   stringoutpdf = stringout;
@@ -199,6 +201,7 @@ void FinalYieldvsMult(
   PathIn += "PtIntegratedYields_" + year;
   PathIn += Spart[part];
   PathIn += IsOneOrTwoGauss[UseTwoGauss];
+  PathIn += SIsBkgParab[isBkgParab];
   if (isSysStudy)
     PathIn += SysPath;
   PathIn += "_Levi";
@@ -209,6 +212,7 @@ void FinalYieldvsMult(
   PathInSistFitChoice = "CompareFitFunctions/CompareFitF_" + year;
   PathInSistFitChoice += Spart[part];
   PathInSistFitChoice += IsOneOrTwoGauss[UseTwoGauss];
+  PathInSistFitChoice += SIsBkgParab[isBkgParab];
   if (isSysStudy)
     PathInSistFitChoice += SysPath;
   PathInSistFitChoice += ".root";

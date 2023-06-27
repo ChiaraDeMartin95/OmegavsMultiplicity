@@ -69,15 +69,16 @@ TString titlePt = "p_{T} (GeV/c)";
 TString titleYield = "1/N_{ev} dN/dp_{T}";
 
 void YieldEffCorr(Int_t part = 6,
-                  TString SPathInEff = "eff6June.root",
-                  TString SysPath = "_Sel6June",
+                  TString SPathInEff = "eff_LHC22o_pass4_Sel23June.root" /*"eff6June.root"*/,
+                  TString SysPath = "_Sel23June",
                   TString OutputDir = "Yields",
-                  TString year = "LHC22m_pass4_Train79153",
+                  TString year = "LHC22o_pass4_Train89684" /*"LHC22m_pass4_Train79153"*/,
+                  Bool_t isBkgParab = 1,
                   Bool_t isSysStudy = 1,
                   Int_t MultType = 1, // 0: no mult for backward compatibility, 1: FT0M, 2: FV0M
                   Bool_t isMB = 1,
                   Int_t mul = 0,
-                  Bool_t UseTwoGauss = 0)
+                  Bool_t UseTwoGauss = 1)
 {
 
   if (mul > numMult)
@@ -97,18 +98,20 @@ void YieldEffCorr(Int_t part = 6,
 
   TString Sfileout = OutputDir + "/YieldEffCorr" + year + "_" + Spart[part];
   Sfileout += IsOneOrTwoGauss[UseTwoGauss];
+  Sfileout += SIsBkgParab[isBkgParab];
   if (isMB)
     Sfileout += "_Mult0-100";
   else
     Sfileout += Form("_Mult%.1f-%.1f", MultiplicityPerc[mul], MultiplicityPerc[mul + 1]);
   if (isSysStudy)
     Sfileout += SysPath;
-  //Sfileout += "_Test";
+  // Sfileout += "_Test";
 
   TString SPathIn;
   SPathIn = "Yields/Yields_" + Spart[part];
   SPathIn += "_" + year;
   SPathIn += IsOneOrTwoGauss[UseTwoGauss];
+  SPathIn += SIsBkgParab[isBkgParab];
   if (isMB)
     SPathIn += "_Mult0-100";
   else
@@ -148,12 +151,22 @@ void YieldEffCorr(Int_t part = 6,
     return;
   }
 
-  TDirectoryFile *dir = (TDirectoryFile *)fileinEff->Get("effOmega");
+  TString dirName = "";
+  if (SysPath == "_Sel23June")
+    dirName = "effCascade";
+  else
+    dirName = "effOmega";
+  TDirectoryFile *dir = (TDirectoryFile *)fileinEff->Get(dirName);
   TString inputNameEff = "hEff";
-  if (part >= 3 && part <= 5)
-    inputNameEff += "Xi";
-  else if (part >= 6 && part <= 8)
-    inputNameEff += "Omega";
+  if (SysPath == "_Sel23June")
+    inputNameEff += "Casc";
+  else
+  {
+    if (part >= 3 && part <= 5)
+      inputNameEff += "Xi";
+    else if (part >= 6 && part <= 8)
+      inputNameEff += "Omega";
+  }
   if (part == 3 || part == 6)
     inputNameEff += "Minus";
   else if (part == 4 || part == 7)
@@ -169,16 +182,21 @@ void YieldEffCorr(Int_t part = 6,
   }
 
   histoYieldCorr = (TH1F *)histoYield->Clone("histoYieldCorr");
-  // histoYieldCorr->Divide(histoEff);
-  for (Int_t i = 1; i <= histoEff->GetNbinsX(); i++)
+  //histoYieldCorr->Divide(histoEff);
+  
+  Float_t RelErr = 0;
+  for (Int_t i = 1; i <= histoYield->GetNbinsX(); i++)
   {
     cout << "\npt: " << histoYield->GetBinCenter(i) << endl;
     cout << histoYield->GetBinContent(i) << " +- " << histoYield->GetBinError(i) << endl;
     cout << histoEff->GetBinContent(i) << " +- " << histoEff->GetBinError(i) << endl;
     cout << histoYieldCorr->GetBinContent(i) << " +- " << histoYieldCorr->GetBinError(i) << endl;
     histoYieldCorr->SetBinContent(i, histoYield->GetBinContent(i) / histoEff->GetBinContent(histoEff->FindBin(histoYield->GetBinCenter(i))));
-    histoYieldCorr->SetBinError(i, histoYield->GetBinError(i) / histoEff->GetBinContent(histoEff->FindBin(histoYield->GetBinCenter(i))));
+    RelErr = sqrt(pow(histoYield->GetBinError(i)/histoYield->GetBinContent(i), 2) + pow(histoEff->GetBinError(histoEff->FindBin(histoYield->GetBinCenter(i)))/histoEff->GetBinContent(histoEff->FindBin(histoYield->GetBinCenter(i))), 2));
+    //histoYieldCorr->SetBinError(i, histoYield->GetBinError(i) / histoEff->GetBinContent(histoEff->FindBin(histoYield->GetBinCenter(i))));
+    histoYieldCorr->SetBinError(i, RelErr * histoYieldCorr->GetBinContent(i));
   }
+  
   /*
   cout << "Check: " << endl;
   cout << histoYield->GetNbinsX() << endl;
@@ -262,15 +280,18 @@ void YieldEffCorr(Int_t part = 6,
     }
   }
 
-  StyleHisto(histoPub, 0, 1.3 * histoPubFinal->GetBinContent(histoPubFinal->GetMaximumBin()), kAzure + 7, 33, TitleXPt, titleYield, "", 0, 0, 0, 1.5, 1.5, 2);
+  StyleHisto(histoPubFinal, 0, 1.3 * histoPubFinal->GetBinContent(histoPubFinal->GetMaximumBin()), kAzure + 7, 33, TitleXPt, titleYield, "", 0, 0, 0, 1.5, 1.5, 2);
 
   TCanvas *canvasComp = new TCanvas("canvasComp" + Spart[part], "canvasComp" + Spart[part], 1000, 800);
   StyleCanvas(canvasComp, 0.15, 0.05, 0.05, 0.15);
   canvasComp->cd();
   histoYieldCorr->Draw("same");
   histoPubFinal->Draw("same");
-  canvasComp->SaveAs(Sfileout + "_CompPub.pdf");
-  canvasComp->SaveAs(Sfileout + "_CompPub.png");
+  if (isMB == 1)
+  {
+    canvasComp->SaveAs(Sfileout + "_CompPub.pdf");
+    canvasComp->SaveAs(Sfileout + "_CompPub.png");
+  }
 
   TFile *fileout = new TFile(Sfileout + ".root", "RECREATE");
   histoYieldCorr->Write();

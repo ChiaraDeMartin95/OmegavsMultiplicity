@@ -111,14 +111,15 @@ void StylePad(TPad *pad, Float_t LMargin, Float_t RMargin, Float_t TMargin, Floa
 // take spectra in input
 // produces ratio of spectra wrt 0-100% multiplciity class
 
-void PlotSpectraRatios(Int_t part = 6,
+void PlotSpectraRatios(Int_t part = 8,
                        Int_t ChosenMult = numMult,
-                       TString SysPath = "" /*"_Sel6June"*/,
+                       TString SysPath = "_Sel23June" /*"_Sel6June"*/,
                        TString OutputDir = "PtSpectraMultClasses/",
+                       Bool_t isBkgParab = 1,
                        TString year = "LHC22o_pass4_Train89684" /*"LHC22m_pass4_Train79153"*/,
                        Bool_t isSysStudy = 1,
                        Int_t MultType = 1, // 0: no mult for backward compatibility, 1: FT0M, 2: FV0A
-                       Bool_t UseTwoGauss = 0)
+                       Bool_t UseTwoGauss = 1)
 {
 
   gStyle->SetOptStat(0);
@@ -142,8 +143,7 @@ void PlotSpectraRatios(Int_t part = 6,
   PathInSist = "SystematicErrors/TotalSysError_" + year + "_";
   PathInSist += Spart[part];
   // PathInSist += Smolt[numMult];
-  if (isSysStudy)
-    PathInSist += SysPath;
+  //if (isSysStudy) PathInSist += SysPath;
   PathInSist += ".root";
 
   TFile *fileIn[numMult + 1];
@@ -155,6 +155,7 @@ void PlotSpectraRatios(Int_t part = 6,
   stringout = OutputDir + "PlotSpectraRatios_" + year;
   stringout += Spart[part];
   stringout += IsOneOrTwoGauss[UseTwoGauss];
+  stringout += SIsBkgParab[isBkgParab];
   if (isSysStudy)
     stringout += SysPath;
   stringoutpdf = stringout;
@@ -214,6 +215,7 @@ void PlotSpectraRatios(Int_t part = 6,
     PathIn = "Yields/YieldEffCorr" + year + "_";
     PathIn += Spart[part];
     PathIn += IsOneOrTwoGauss[UseTwoGauss];
+    PathIn += SIsBkgParab[isBkgParab];
     if (m == numMult)
     {
       Smolt[m] += "_Mult0-100";

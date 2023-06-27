@@ -114,24 +114,25 @@ void StylePad(TPad *pad, Float_t LMargin, Float_t RMargin, Float_t TMargin, Floa
 Float_t YLowMean[numPart] = {0.485, 1.110, 1.110, 1.316, 1.316, 1.316, 1.66, 1.66, 1.66};
 Float_t YUpMean[numPart] = {0.51, 1.130, 1.130, 1.327, 1.327, 1.327, 1.68, 1.68, 1.68};
 Float_t YLowSigma[numPart] = {0.0002, 0.0002, 0.0002, 0.0002, 0.0002, 0.0002, 0.0, 0.0, 0.0};
-Float_t YUpSigma[numPart] = {0.025, 0.015, 0.015, 0.015, 0.015, 0.015, 0.006, 0.006, 0.006};
+Float_t YUpSigma[numPart] = {0.025, 0.015, 0.015, 0.015, 0.015, 0.015, 0.008, 0.008, 0.008};
 Float_t YLowPurity[numPart] = {0, 0, 0, 0, 0, 0, 0, 0, 0};
 
 Float_t YLow[numPart] = {0};
 Float_t YUp[numPart] = {0};
 
-Float_t YLowRatio[numChoice] = {0.99, 0.8, 0.8, 0, 0.8, 0.8, 0.8};
-Float_t YUpRatio[numChoice] = {1.01, 1.2, 1.2, 8, 1.2, 1.2, 1.2};
+Float_t YLowRatio[numChoice] = {0.99, 0.4, 0.8, 0, 0.8, 0.8, 0.8};
+Float_t YUpRatio[numChoice] = {1.01, 1.6, 1.2, 8, 1.2, 1.2, 1.2};
 
 void MeanSigmaPurityMultRatio(Int_t part = 6,
                               Int_t ChosenMult = numMult,
                               Int_t Choice = 0,
-                              TString SysPath = "" /*"_Sel6June"*/,
+                              Bool_t isBkgParab = 1,
+                              TString SysPath = ""/*"_Sel23June" /*"_Sel6June"*/,
                               TString OutputDir = "MeanSigmaPurityMultClasses/",
                               TString year = "LHC22o_pass4_Train89684" /*"LHC22m_pass4_Train79153"*/,
                               Bool_t isSysStudy = 1,
                               Int_t MultType = 1, // 0: no mult for backward compatibility, 1: FT0M, 2: FV0A
-                              Bool_t UseTwoGauss = 0)
+                              Bool_t UseTwoGauss = 1)
 {
 
   gStyle->SetOptStat(0);
@@ -163,13 +164,14 @@ void MeanSigmaPurityMultRatio(Int_t part = 6,
   }
   else if (Choice == 3)
   {
-    YLow[part] = 1e-8;
-    YUp[part] = 10;
+    YLow[part] = 1e-9;
+    YUp[part] = 100;
   }
   // multiplicity related variables
   TString Smolt[numMult + 1];
   TString SmoltBis[numMult + 1];
   TString sScaleFactorFinal[numMult + 1];
+  Float_t ScaleFactorFinal[numMult + 1];
 
   TString SErrorSpectrum[3] = {"stat.", "syst. uncorr.", "syst. corr."};
 
@@ -184,6 +186,7 @@ void MeanSigmaPurityMultRatio(Int_t part = 6,
   stringout += "_" + TypeHisto[Choice];
   stringout += "_" + Spart[part];
   stringout += IsOneOrTwoGauss[UseTwoGauss];
+  stringout += SIsBkgParab[isBkgParab];
   if (isSysStudy)
     stringout += SysPath;
   stringoutpdf = stringout;
@@ -233,6 +236,7 @@ void MeanSigmaPurityMultRatio(Int_t part = 6,
     PathIn += Spart[part];
     PathIn += "_" + year;
     PathIn += IsOneOrTwoGauss[UseTwoGauss];
+    PathIn += SIsBkgParab[isBkgParab];
     if (m == numMult)
     {
       Smolt[m] += "_Mult0-100";
@@ -292,15 +296,17 @@ void MeanSigmaPurityMultRatio(Int_t part = 6,
 
   for (Int_t m = numMult; m >= 0; m--)
   {
+    ScaleFactorFinal[m] = ScaleFactor[m];
     if (m == numMult)
     {
       ColorMult[m] = ColorMB;
       MarkerMult[m] = MarkerMB;
       SizeMult[m] = SizeMB;
+      ScaleFactorFinal[m] = ScaleFactorMB;
     }
     fHistSpectrumScaled[m] = (TH1F *)fHistSpectrum[m]->Clone("fHistSpectrumScaled_" + Smolt[m]);
     if (Choice == 3)
-      fHistSpectrumScaled[m]->Scale(ScaleFactor[m]);
+      fHistSpectrumScaled[m]->Scale(ScaleFactorFinal[m]);
     for (Int_t b = 1; b <= fHistSpectrum[m]->GetNbinsX(); b++)
     {
       // cout << "bin " << b << " " << fHistSpectrum[m]->GetBinContent(b) << "+-" << fHistSpectrum[m]->GetBinError(b) << endl;
@@ -310,10 +316,10 @@ void MeanSigmaPurityMultRatio(Int_t part = 6,
     fHistSpectrumScaled[m]->SetMarkerColor(ColorMult[m]);
     fHistSpectrumScaled[m]->SetLineColor(ColorMult[m]);
     fHistSpectrumScaled[m]->SetMarkerStyle(MarkerMult[m]);
-    fHistSpectrumScaled[m]->SetMarkerSize(SizeMult[m]);
+    fHistSpectrumScaled[m]->SetMarkerSize(0.6*SizeMult[m]);
     fHistSpectrumScaled[m]->Draw("same e0x0");
     if (Choice == 3)
-      sScaleFactorFinal[m] = Form(" (x2^{%i})", int(log2(ScaleFactor[m])));
+      sScaleFactorFinal[m] = Form(" (x2^{%i})", int(log2(ScaleFactorFinal[m])));
     else
       sScaleFactorFinal[m] = "";
     legendAllMult->AddEntry(fHistSpectrumScaled[m], SmoltBis[m] + "%" + sScaleFactorFinal[m] + " ", "pef");

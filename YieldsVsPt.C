@@ -53,7 +53,10 @@ void StyleHisto(TH1F *histo, Float_t Low, Float_t Up, Int_t color, Int_t style, 
   histo->SetTitle(title);
 }
 
-Bool_t reject;
+const Float_t UpperLimitLSBOmega = 1.655; // upper limit of fit of left sidebands for omega
+const Float_t LowerLimitRSBOmega = 1.689; // lower limit of fit of right sidebands for omega
+
+Bool_t reject = 1;
 Double_t fparab(Double_t *x, Double_t *par)
 {
   Float_t LimInf = 0;
@@ -63,15 +66,15 @@ Double_t fparab(Double_t *x, Double_t *par)
     LimInf = 0.474;
     LimSup = 0.520;
   }
-  else if (par[3] == 3 || par[3] == 4)
+  else if (par[3] == 3 || par[3] == 4 || par[3] == 5)
   {
     LimInf = 1.310;
     LimSup = 1.335;
   }
-  else if (par[2] == 5 || par[2] == 6)
+  else if (par[3] == 6 || par[3] == 7 || par[3] == 8)
   {
-    LimInf = 1.66;
-    LimSup = 1.682;
+    LimInf = UpperLimitLSBOmega; // 1.66
+    LimSup = LowerLimitRSBOmega; // 1.692
   }
   if (reject && x[0] > LimInf && x[0] < LimSup)
   {
@@ -90,15 +93,15 @@ Double_t fretta(Double_t *x, Double_t *par)
     LimInf = 0.47;
     LimSup = 0.530;
   }
-  else if (par[2] == 3 || par[2] == 3)
+  else if (par[2] == 3 || par[2] == 4 || par[2] == 5)
   {
     LimInf = 1.310;
     LimSup = 1.335;
   }
-  else if (par[2] == 5 || par[2] == 6)
+  else if (par[2] == 6 || par[2] == 7 || par[2] == 8)
   {
-    LimInf = 1.66;  // 1.65
-    LimSup = 1.682; // 1.69
+    LimInf = UpperLimitLSBOmega; // 1.65
+    LimSup = LowerLimitRSBOmega; // 1.69
   }
   if (reject && x[0] > LimInf && x[0] < LimSup)
   {
@@ -130,8 +133,9 @@ Float_t limsup[numPart] = {0.545, 1.1168, 1.1168, 1.35, 1.35, 1.35, 1.71, 1.71, 
 // Omega 22m_pass4: 1.64 - 1.69
 
 void YieldsVsPt(Bool_t isSysStudy = 1,
-                TString SysPath = "" /*"_Sel6June"*/,
-                Int_t part = 6,
+                TString SysPath = "_Sel23June",
+                Int_t part = 8,
+                Bool_t isYAxisMassZoomed = 0,
                 Int_t MassRebin = 2,
                 Int_t MultType = 1, // 0: no mult for backward compatibility, 1: FT0M, 2: FV0A
                 Bool_t isMB = 1,
@@ -140,10 +144,10 @@ void YieldsVsPt(Bool_t isSysStudy = 1,
                 TString SPathIn = "OutputFilesCascPPTask/LHC22o_pass4/AnalysisResults",
                 TString SPathInEvt = "AnalysisResultsCascQATask/LHC22o_pass4/AnalysisResultsEvts",
                 TString OutputDir = "Yields",
-                Bool_t UseTwoGauss = 0,
-                Bool_t isBkgParab = 0,
+                Bool_t UseTwoGauss = 1,
+                Bool_t isBkgParab = 1,
                 Bool_t isMeanFixedPDG = 0,
-                Float_t sigmacentral = 3)
+                Float_t sigmacentral = 4)
 {
 
   if (mul > numMult)
@@ -175,7 +179,9 @@ void YieldsVsPt(Bool_t isSysStudy = 1,
     SPathIn += SysPath;
   SPathIn += ".root";
 
-  SPathInEvt += "_" + year + ".root";
+  SPathInEvt += "_" + year;
+  // SPathInEvt += "_run528531";
+  SPathInEvt += ".root";
   TFile *filein = new TFile(SPathIn, "");
   if (!filein)
   {
@@ -378,6 +384,7 @@ void YieldsVsPt(Bool_t isSysStudy = 1,
   TH1F *histoCountsPerEvent = new TH1F("histoCountsPerEvent", "histoCountsPerEvent", numPt, binpt);
   TH1F *histoMean = new TH1F("histoMean", "histoMean", numPt, binpt);
   TH1F *histoSigma = new TH1F("histoSigma", "histoSigma", numPt, binpt);
+  TH1F *histoSigmaNarrow = new TH1F("histoSigmaNarrow", "histoSigmaNarrow", numPt, binpt);
   TH1F *histoPurity = new TH1F("histoPurity", "histoPurity", numPt, binpt);
   TH1F *histoYield = new TH1F("histoYield", "histoYield", numPt, binpt);
   TH1F *histoSignificance = new TH1F("histoSignificance", "histoSignificance", numPt, binpt);
@@ -400,6 +407,8 @@ void YieldsVsPt(Bool_t isSysStudy = 1,
     hInvMass[pt] = (TH1F *)h2->ProjectionY(Form("hInvMass_pt%i", pt), h2->GetXaxis()->FindBin(binpt[pt] + 0.001), h2->GetXaxis()->FindBin(binpt[pt + 1] - 0.001));
     hInvMass[pt]->Rebin(MassRebin);
     StyleHisto(hInvMass[pt], 0, 1.2 * hInvMass[pt]->GetBinContent(hInvMass[pt]->GetMaximumBin()), 1, 20, TitleInvMass[part], "Counts", SPt[pt], 1, LowLimitMass[part], UpLimitMass[part], 1.4, 1.4, 0.7);
+    if (isYAxisMassZoomed)
+      hInvMass[pt]->GetYaxis()->SetRangeUser(0, 2 * hInvMass[pt]->GetBinContent(hInvMass[pt]->FindBin(1.65)));
     if (pt < 9)
       canvas[0]->cd(pt + 1);
     else if (pt < 18)
@@ -450,6 +459,8 @@ void YieldsVsPt(Bool_t isSysStudy = 1,
   Float_t errmean[numPt] = {0};
   Float_t sigma[numPt] = {0};
   Float_t errsigma[numPt] = {0};
+  Float_t sigmaNarrow[numPt] = {0};
+  Float_t errsigmaNarrow[numPt] = {0};
   Float_t b[numPt] = {0};
   Float_t errb[numPt] = {0};
   Float_t SSB[numPt] = {0};
@@ -467,6 +478,7 @@ void YieldsVsPt(Bool_t isSysStudy = 1,
       // if (year == "LHC22m_pass4_Train79153")
       if (kTRUE)
       {
+        /*
         min_histo[part] = 1.645; // estremi del range visualizzazione bkg
         max_histo[part] = 1.695;
         liminf[part] = 1.645; // estremi regione fit del bkg e total
@@ -486,24 +498,31 @@ void YieldsVsPt(Bool_t isSysStudy = 1,
           max_histo[part] = 1.7;
           limsup[part] = 1.7;
         }
+*/
+        min_histo[part] = 1.64;
+        liminf[part] = 1.64;
+        max_histo[part] = 1.704; // 1.7
+        limsup[part] = 1.704;    // 1.7
+        if (binpt[pt] < 1.3)
+        {
+          min_histo[part] = 1.63;
+          liminf[part] = 1.63;
+          max_histo[part] = 1.71; // 1.7
+          limsup[part] = 1.71;    // 1.7
+        }
+
         // retta or pol2
+        /*
         if (binpt[pt] < 1. || binpt[pt] > 4.)
           isBkgParab = 0;
         else
           isBkgParab = 1;
-        if (part == 6 || part == 7 || part == 8)
-        {
-          // if (binpt[pt] == 1.4 || binpt[pt] == 2. || binpt[pt] == 2.2) isBkgParab = 0;
-          if (binpt[pt] >= 1.99 && binpt[pt] <= 2.1)
-            isBkgParab = 0;
-          if (binpt[pt] >= 1.59 && binpt[pt] <= 1.61)
-            isBkgParab = 0;
-        }
-        if (part == 7)
-        {
-          if (binpt[pt] >= 0.9 && binpt[pt] <= 2.1)
-            isBkgParab = 0;
-        }
+        if (binpt[pt] >= 1.99 && binpt[pt] <= 2.1)
+          isBkgParab = 0;
+        if (binpt[pt] >= 1.59 && binpt[pt] <= 1.61)
+          isBkgParab = 0;
+          */
+        // isBkgParab = 1;
       }
     }
     if (part == 6 || part == 7 || part == 8)
@@ -511,18 +530,6 @@ void YieldsVsPt(Bool_t isSysStudy = 1,
       if (binpt[pt] < 0.6)
         continue;
     }
-    // special settings
-    if (part == 0)
-    {
-      if (pt == 1)
-        limsup[part] = 0.54;
-      if (binpt[pt] > 1.5)
-      {
-        liminf[part] = 0.42;
-        limsup[part] = 0.57;
-      }
-    }
-    // end of special settings
 
     // UseTwoGauss = 1;
     if (pt < 9)
@@ -573,13 +580,14 @@ void YieldsVsPt(Bool_t isSysStudy = 1,
     bkg2[pt]->SetLineColor(kBlue);
 
     bkgretta[pt] = new TF1(Form("retta%i", pt), fretta, liminf[part], limsup[part], 3);
-    bkgretta[pt]->SetLineColor(418);
+    bkgretta[pt]->SetLineColor(kGreen + 3);
     bkgretta[pt]->FixParameter(2, part);
 
     bkgparab[pt] = new TF1(Form("parab%i", pt), fparab, liminf[part], limsup[part], 4);
-    bkgparab[pt]->SetLineColor(kBlue);
+    bkgparab[pt]->SetLineColor(kAzure + 7);
     bkgparab[pt]->FixParameter(3, part);
 
+    Bool_t UseTwoGaussUpdated = 1;
     if (UseTwoGauss)
     {
       cout << "\n\e[35mFit with two gauss \e[39m"
@@ -647,10 +655,10 @@ void YieldsVsPt(Bool_t isSysStudy = 1,
       {
         total[pt]->SetParLimits(0, 0.08 * hInvMass[pt]->GetBinContent(hInvMass[pt]->GetMaximumBin()), hInvMass[pt]->GetBinContent(hInvMass[pt]->GetMaximumBin()));
         total[pt]->SetParLimits(1, 1.66, 1.68);
-        total[pt]->SetParLimits(2, 0.002, 0.02);
+        total[pt]->SetParLimits(2, 0.002, 0.01);
         total[pt]->SetParLimits(3, 0.08 * hInvMass[pt]->GetBinContent(hInvMass[pt]->GetMaximumBin()), hInvMass[pt]->GetBinContent(hInvMass[pt]->GetMaximumBin())); // maximum was wothout 0.3
         total[pt]->SetParLimits(4, 1.66, 1.68);
-        total[pt]->SetParLimits(5, 0.001, 0.02);
+        total[pt]->SetParLimits(5, 0.001, 0.01);
         if (isMeanFixedPDG)
         {
           total[pt]->FixParameter(1, massParticle[part]);
@@ -679,15 +687,15 @@ void YieldsVsPt(Bool_t isSysStudy = 1,
       if (total[pt]->GetParameter(2) > total[pt]->GetParameter(5))
       {
         if (total[pt]->GetParameter(0) > total[pt]->GetParameter(3))
-          UseTwoGauss = kFALSE;
+          UseTwoGaussUpdated = kFALSE;
       }
       else
       {
         if (total[pt]->GetParameter(0) < total[pt]->GetParameter(3))
-          UseTwoGauss = kFALSE;
+          UseTwoGaussUpdated = kFALSE;
       }
 
-      cout << "UseTwoGauss = " << UseTwoGauss << endl;
+      cout << "UseTwoGauss = " << UseTwoGaussUpdated << endl;
 
       totalbis[pt] = (TF1 *)total[pt]->Clone();
       fFitResultPtr1[pt] = fFitResultPtr0[pt];
@@ -718,10 +726,7 @@ void YieldsVsPt(Bool_t isSysStudy = 1,
         bkg1[pt]->FixParameter(1, total[pt]->GetParameter(7));
       }
 
-      if (part == 3 || part == 4 || part == 5)
-        UseTwoGauss = 0;
-
-      if (UseTwoGauss)
+      if (UseTwoGaussUpdated)
       {
         if (pt < 9)
           canvas[0]->cd(pt + 1);
@@ -744,10 +749,17 @@ void YieldsVsPt(Bool_t isSysStudy = 1,
         mean[pt] = (functions1[pt]->GetParameter(1) + functions2[pt]->GetParameter(1)) / 2;
         errmean[pt] = (total[pt]->GetParError(1) + total[pt]->GetParError(4)) / 2;
         sigma[pt] = (functions1[pt]->GetParameter(2) + functions2[pt]->GetParameter(2)) / 2;
+        sigmaNarrow[pt] = functions1[pt]->GetParameter(2);
+        errsigmaNarrow[pt] = functions1[pt]->GetParError(2);
+        if (functions1[pt]->GetParameter(2) > functions2[pt]->GetParameter(2))
+        {
+          sigmaNarrow[pt] = functions2[pt]->GetParameter(2);
+          errsigmaNarrow[pt] = functions2[pt]->GetParError(2);
+        }
         errsigma[pt] = sqrt(pow(total[pt]->GetParError(2), 2) + pow(total[pt]->GetParError(5), 2) + 2 * cov_sigma) / 2;
       }
     }
-    if (!UseTwoGauss)
+    if (!UseTwoGaussUpdated || !UseTwoGauss)
     {
       cout << "\n\e[36mFit with one gauss only: \e[39m"
            << " Pt: " << binpt[pt] << "-" << binpt[pt + 1] << endl;
@@ -863,8 +875,46 @@ void YieldsVsPt(Bool_t isSysStudy = 1,
       mean[pt] = total[pt]->GetParameter(1);
       errmean[pt] = total[pt]->GetParError(1);
       sigma[pt] = total[pt]->GetParameter(2);
+      sigmaNarrow[pt] = sigma[pt];
       errsigma[pt] = total[pt]->GetParError(2);
+      errsigmaNarrow[pt] = errsigma[pt];
     }
+
+    cout << "\nMean: " << mean[pt] << " +/- " << errmean[pt] << endl;
+    cout << "Sigma: " << sigma[pt] << " +/- " << errsigma[pt] << endl;
+
+    TLine *lineP3Sigma = new TLine(mean[pt] + sigmacentral * sigma[pt], 0, mean[pt] + sigmacentral * sigma[pt], hInvMass[pt]->GetMaximum()); // +3 sigma
+    TLine *lineM3Sigma = new TLine(mean[pt] - sigmacentral * sigma[pt], 0, mean[pt] - sigmacentral * sigma[pt], hInvMass[pt]->GetMaximum()); // -3 sigma
+    lineP3Sigma->Draw("same");
+    lineM3Sigma->Draw("same");
+
+    TLine *linebkgFitLL = new TLine(liminf[part], 0, liminf[part], hInvMass[pt]->GetMaximum()); // low limit of left SB
+    TLine *linebkgFitRR = new TLine(limsup[part], 0, limsup[part], hInvMass[pt]->GetMaximum()); // upper limit of right SB
+    linebkgFitLL->SetLineColor(kBlue);
+    linebkgFitRR->SetLineColor(kBlue);
+    TLine *linebkgFitLR = new TLine(UpperLimitLSBOmega, 0, UpperLimitLSBOmega, hInvMass[pt]->GetMaximum()); // upper limit of left SB
+    TLine *linebkgFitRL = new TLine(LowerLimitRSBOmega, 0, LowerLimitRSBOmega, hInvMass[pt]->GetMaximum()); // lower limit of right SB
+    linebkgFitLR->SetLineColor(kBlue);
+    linebkgFitRL->SetLineColor(kBlue);
+    // linebkgFitLL->Draw("same");
+    // linebkgFitRR->Draw("same");
+    // linebkgFitLR->Draw("same");
+    // linebkgFitRL->Draw("same");
+
+    /*
+        if (isBkgParab)
+          bkgparab[pt]->Draw("same");
+        else
+          bkgretta[pt]->Draw("same");
+    */
+    if (pt < 9)
+      canvas[0]->cd(pt + 1);
+    else if (pt < 18)
+      canvas[1]->cd(pt + 1 - 9);
+    else if (pt < 27)
+      canvas[2]->cd(pt + 1 - 18);
+    else
+      canvas[3]->cd(pt + 1 - 27);
 
     // cout << mean[pt] - sigmacentral * sigma[pt] << "-" << mean[pt] + sigmacentral * sigma[pt] << endl;
     //  Compute yield
@@ -908,6 +958,9 @@ void YieldsVsPt(Bool_t isSysStudy = 1,
     histoSigma->SetBinContent(pt + 1, sigma[pt]);
     histoSigma->SetBinError(pt + 1, errsigma[pt]);
 
+    histoSigmaNarrow->SetBinContent(pt + 1, sigmaNarrow[pt]);
+    histoSigmaNarrow->SetBinError(pt + 1, errsigmaNarrow[pt]);
+
     histoPurity->SetBinContent(pt + 1, SSB[pt]);
     histoPurity->SetBinError(pt + 1, errSSB[pt]);
 
@@ -943,9 +996,13 @@ void YieldsVsPt(Bool_t isSysStudy = 1,
   gPad->SetBottomMargin(0.14);
   gPad->SetLeftMargin(0.14);
   StyleHisto(histoSigma, 0, 0.010, 1, 1, titlePt, "#sigma (GeV/c^{2})", "histoSigma", 0, 0, 0, 1.4, 1.4, 1.2);
-  if (part >= 5)
+  StyleHisto(histoSigmaNarrow, 0, 0.010, kAzure + 1, 1, titlePt, "#sigma (GeV/c^{2})", "histoSigma", 0, 0, 0, 1.4, 1.4, 1.2);
+  if (part >= 6)
     histoSigma->GetYaxis()->SetRangeUser(0, 0.02);
+  if (part >= 6)
+    histoSigmaNarrow->GetYaxis()->SetRangeUser(0, 0.02);
   histoSigma->Draw("");
+  // histoSigmaNarrow->Draw("");
   canvasSummary->cd(3);
   gPad->SetBottomMargin(0.14);
   gPad->SetLeftMargin(0.14);
@@ -965,7 +1022,7 @@ void YieldsVsPt(Bool_t isSysStudy = 1,
   TString Soutputfile;
   Soutputfile = OutputDir + "/Yields_" + Spart[part] + "_" + year;
   Soutputfile += IsOneOrTwoGauss[UseTwoGauss];
-  // Soutputfile += SIsBkgParab[isBkgParab];
+  Soutputfile += SIsBkgParab[isBkgParab];
   if (isMB)
     Soutputfile += "_Mult0-100";
   else
@@ -979,8 +1036,10 @@ void YieldsVsPt(Bool_t isSysStudy = 1,
   // save canvases
   canvas[0]->SaveAs(Soutputfile + ".pdf(");
   canvas[1]->SaveAs(Soutputfile + ".pdf");
-  canvas[2]->SaveAs(Soutputfile + ".pdf");
-  canvas[3]->SaveAs(Soutputfile + ".pdf");
+  canvas[2]->Close();
+  canvas[3]->Close();
+  // canvas[2]->SaveAs(Soutputfile + ".pdf");
+  // canvas[3]->SaveAs(Soutputfile + ".pdf");
   canvasYield->SaveAs(Soutputfile + ".pdf");
   canvasSummary->SaveAs(Soutputfile + ".pdf");
   canvasSummaryBis->SaveAs(Soutputfile + ".pdf)");
@@ -991,10 +1050,15 @@ void YieldsVsPt(Bool_t isSysStudy = 1,
   {
     outputfile->WriteTObject(canvas[i]);
   }
+  for (Int_t pt = 0; pt < numPt; pt++)
+  {
+    hInvMass[pt]->Write();
+  }
   outputfile->WriteTObject(histoCountsPerEvent);
   outputfile->WriteTObject(histoYield);
   outputfile->WriteTObject(histoMean);
   outputfile->WriteTObject(histoSigma);
+  outputfile->WriteTObject(histoSigmaNarrow);
   outputfile->WriteTObject(histoPurity);
   outputfile->WriteTObject(histoSignificance);
   outputfile->Close();
@@ -1007,7 +1071,7 @@ void YieldsVsPt(Bool_t isSysStudy = 1,
   cout << "Total raw yield (signal+bkg within 3sigmas) " << TotSigBkg << endl;
   cout << "Total number of analysed events " << NEvents << endl;
 
-  TH1F *hEventsFT0MFinal = new TH1F("hEventsFT0MFinal", "hEventsFT0MFinal",100, 0, 100);
+  TH1F *hEventsFT0MFinal = new TH1F("hEventsFT0MFinal", "hEventsFT0MFinal", 100, 0, 100);
   for (Int_t b = 1; b <= hEventsFT0MFinal->GetNbinsX(); b++)
   {
     counts = 0;
@@ -1040,10 +1104,12 @@ void YieldsVsPt(Bool_t isSysStudy = 1,
   StyleHisto(hEventsFV0AFinal, 0, 1.2 * hEventsFV0AFinal->GetBinContent(hEventsFV0AFinal->GetMaximumBin()), 1, 1, "FV0A Multiplicity percentile", "Counts", "hEventsFV0AFinal", 0, 0, 0, 1.4, 1.4, 1.2);
   hEventsFV0AFinal->Draw("same");
   canvasFV0A->SaveAs(Soutputfile + "_FV0A.pdf");
+  canvasFV0A->Close();
 
   TCanvas *canvasFT0M = new TCanvas("canvasFT0M", "canvasFT0M", 1000, 800);
   StyleCanvas(canvasFT0M, 0.14, 0.05, 0.11, 0.15);
   StyleHisto(hEventsFT0MFinal, 0, 1.2 * hEventsFT0MFinal->GetBinContent(hEventsFT0MFinal->GetMaximumBin()), 1, 1, "FT0M Multiplicity percentile", "Counts", "hEventsFT0MFinal", 0, 0, 0, 1.4, 1.4, 1.2);
   hEventsFT0MFinal->Draw("same");
   canvasFT0M->SaveAs(Soutputfile + "_FT0M.pdf");
+  canvasFT0M->Close();
 }

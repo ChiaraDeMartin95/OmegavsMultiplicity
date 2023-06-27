@@ -37,3 +37,7 @@ YieldFit.C (to be run on gr3srv): fit the pt spectra (+ plots spectra + fits + r
 Use the script script_UpLoadToServer.sh to uploaded the desired files to the gr3srv server
 
 CompareYieldFit.C: compare pt-integrated yields vs mult obtained with different fit functions + computes syst. uncertainty
+
+FinalYieldvsMult.C : produces yield vs dNdeta and compares to Run 2 published AnalysisResults
+
+YieldTotalSist.C: compute total systematic uncertainties from different sources

@@ -475,54 +475,16 @@ void YieldsVsPt(Bool_t isSysStudy = 1,
   {
     if (part == 6 || part == 7 || part == 8)
     { // Omega
-      // if (year == "LHC22m_pass4_Train79153")
-      if (kTRUE)
+      min_histo[part] = 1.64;
+      liminf[part] = 1.64;
+      max_histo[part] = 1.704; // 1.7
+      limsup[part] = 1.704;    // 1.7
+      if (binpt[pt] < 1.3)
       {
-        /*
-        min_histo[part] = 1.645; // estremi del range visualizzazione bkg
-        max_histo[part] = 1.695;
-        liminf[part] = 1.645; // estremi regione fit del bkg e total
-        limsup[part] = 1.695;
-        if (binpt[pt] > 2)
-        {
-          min_histo[part] = 1.64;
-          liminf[part] = 1.64;
-          max_histo[part] = 1.7;
-          limsup[part] = 1.7;
-        }
-        UpLimitMass[part] = 1.71;
-        if (binpt[pt] < 1.2)
-        {
-          min_histo[part] = 1.635;
-          liminf[part] = 1.635;
-          max_histo[part] = 1.7;
-          limsup[part] = 1.7;
-        }
-*/
-        min_histo[part] = 1.64;
-        liminf[part] = 1.64;
-        max_histo[part] = 1.704; // 1.7
-        limsup[part] = 1.704;    // 1.7
-        if (binpt[pt] < 1.3)
-        {
-          min_histo[part] = 1.63;
-          liminf[part] = 1.63;
-          max_histo[part] = 1.71; // 1.7
-          limsup[part] = 1.71;    // 1.7
-        }
-
-        // retta or pol2
-        /*
-        if (binpt[pt] < 1. || binpt[pt] > 4.)
-          isBkgParab = 0;
-        else
-          isBkgParab = 1;
-        if (binpt[pt] >= 1.99 && binpt[pt] <= 2.1)
-          isBkgParab = 0;
-        if (binpt[pt] >= 1.59 && binpt[pt] <= 1.61)
-          isBkgParab = 0;
-          */
-        // isBkgParab = 1;
+        min_histo[part] = 1.63;
+        liminf[part] = 1.63;
+        max_histo[part] = 1.71; // 1.7
+        limsup[part] = 1.71;    // 1.7
       }
     }
     if (part == 6 || part == 7 || part == 8)
@@ -531,7 +493,6 @@ void YieldsVsPt(Bool_t isSysStudy = 1,
         continue;
     }
 
-    // UseTwoGauss = 1;
     if (pt < 9)
       canvas[0]->cd(pt + 1);
     else if (pt < 18)
@@ -1027,10 +988,8 @@ void YieldsVsPt(Bool_t isSysStudy = 1,
     Soutputfile += "_Mult0-100";
   else
     Soutputfile += Form("_Mult%.1f-%.1f", MultiplicityPerc[mul], MultiplicityPerc[mul + 1]);
-  // Soutputfile += "_DefSel";
   if (isSysStudy)
     Soutputfile += SysPath;
-  // Soutputfile += "_FewPtBins";
   // Soutputfile += "_Test";
 
   // save canvases

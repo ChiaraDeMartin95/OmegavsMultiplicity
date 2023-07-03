@@ -70,11 +70,11 @@ TString titleYield = "1/N_{ev} dN/dp_{T}";
 
 TString TitleInvMass[numPart] = {"(#pi^{+}, #pi^{-}) invariant mass (GeV/#it{c}^{2})", "(p, #pi^{-}) invariant mass (GeV/#it{c}^{2})", "(#bar{p}, #pi^{-}) invariant mass (GeV/#it{c}^{2})", "(#Lambda, #pi^{-}) invariant mass (GeV/#it{c}^{2})"};
 TString namehisto[numPart] = {"h3dMassK0Short", "", "", "hCascMinusInvMassvsPt", "hCascPlusInvMassvsPt", "hCascMinusInvMassvsPt", "hCascPlusInvMassvsPt"};
-Float_t YLowMean[numPart] = {0.485, 1.110, 1.110, 1.316, 1.316, 1.664, 1.664};
-Float_t YUpMean[numPart] = {0.51, 1.130, 1.130, 1.327, 1.327, 1.68, 1.68};
-Float_t YLowSigma[numPart] = {0.0002, 0.0002, 0.0002, 0.0002, 0.0002, 0.0002, 0.0002};
-Float_t YUpSigma[numPart] = {0.025, 0.015, 0.015, 0.015, 0.015, 0.015, 0.015};
-Float_t YLowPurity[numPart] = {0, 0, 0, 0, 0, 0, 0};
+Float_t YLowMean[numPart] = {0.485, 1.110, 1.110, 1.316, 1.316,  1.316, 1.664, 1.664,1.664};
+Float_t YUpMean[numPart] = {0.51, 1.130, 1.130, 1.327, 1.327, 1.327, 1.68, 1.68, 1.68};
+Float_t YLowSigma[numPart] = {0.0002, 0.0002, 0.0002, 0.0002, 0.0002, 0.0002, 0.0002, 0.0002, 0.0002};
+Float_t YUpSigma[numPart] = {0.025, 0.015, 0.015, 0.015, 0.015, 0.015, 0.015, 0.015, 0.015};
+Float_t YLowPurity[numPart] = {0, 0, 0, 0, 0, 0, 0, 0, 0};
 
 Float_t YLow[numPart] = {0};
 Float_t YUp[numPart] = {0};
@@ -83,17 +83,18 @@ TString CutLabelSummary[25] = {"MassWin", "y", "EtaDau", "dcapostopv", "dcanegto
                                "CascCosPA", "V0CosPA", "DCACascDau", "DCAV0Dau", "rCasc", "rV0", "DCAV0ToPV",
                                "LambdaMass", "TPCPr", "TPCPi", "TOFPr", "TOFPi", "TPCBach",
                                "TOFBach", "proplifetime", "rejcomp", "ptthrtof"};
-// cascospa, dca casc dau, dcabachtopv, dcapostopv, dcanegtopv, lambdamass, rejcomp, nsigmatpcKa, cascradius, v0radius, dcav0dau, v0cospa, casclifetime, bachbaryon, dcabachbar
-Int_t Bin[] = {7, 9, 6, 4, 5, 14, 22, 19, 11, 12, 10, 8, 21, 24, 25};
+// cascospa, dca casc dau, dcabachtopv, dcapostopv, dcanegtopv, lambdamass, rejcomp, nsigmatpcKa, cascradius, v0radius, dcav0dau, v0cospa, casclifetime, bachbaryon, dcabachbar, dcav0topv
+Int_t Bin[] = {7, 9, 6, 4, 5, 14, 22, 19, 11, 12, 10, 8, 21, 24, 25, 13};
 
 // Float_t YLowRatio[numChoice] = {0.98, 0, 0.9, 0.6, 0.6};
 // Float_t YUpRatio[numChoice] = {1.02, 1.2, 1.5, 1.2, 1.2};
 Float_t YLowRatio[numChoice] = {0.98, 0.8, 0.9, 0.8, 0.9};
-Float_t YUpRatio[numChoice] = {1.02, 1.2, 1.2, 1.1, 1.2};
+Float_t YUpRatio[numChoice] = {1.02, 1.2, 1.6, 1.1, 1.2};
 
-void CompareYields(Int_t itopovar = 2, // cospa, dcacascdau, dcabachtopv, dcapostopv, dcanegtopv, lambdamass, rejcomp, nsigmatpcKa, cascradius, v0radius, dcav0dau, v0cospa, casclifetime, cosbachbaryon, dcabachbar
+void CompareYields(Int_t itopovar = 2, // cospa, dcacascdau, dcabachtopv, dcapostopv, dcanegtopv, lambdamass, rejcomp, nsigmatpcKa, cascradius, v0radius, dcav0dau, v0cospa, casclifetime, cosbachbaryon, dcabachbar, dcav0topv
                    Int_t Choice = 0,
                    TString SysPath = "",
+                   Bool_t isBkgParab = 1,
                    TString OutputDir = "CompareTopo",
                    TString year = "LHC22o_pass4_Train89684" /*"LHC22m_pass4_Train79153"*/,
                    Int_t part = 8,
@@ -101,7 +102,7 @@ void CompareYields(Int_t itopovar = 2, // cospa, dcacascdau, dcabachtopv, dcapos
                    Int_t MultType = 1, // 0: no mult for backward compatibility, 1: FT0M, 2: FV0M
                    Bool_t isMB = 1,
                    Int_t mul = 0,
-                   Bool_t UseTwoGauss = 0)
+                   Bool_t UseTwoGauss = 1)
 {
 
   if (mul > numMult)
@@ -123,7 +124,7 @@ void CompareYields(Int_t itopovar = 2, // cospa, dcacascdau, dcabachtopv, dcapos
   TString SPathInFinal[numFiles];
   SPathIn = "Yields/Yields_" + Spart[part] + "_" + year;
   SPathIn += IsOneOrTwoGauss[UseTwoGauss];
-  // SPathIn += SIsBkgParab[isBkgParab];
+  SPathIn += SIsBkgParab[isBkgParab];
   if (isMB)
     SPathIn += "_Mult0-100";
   else
@@ -236,6 +237,8 @@ void CompareYields(Int_t itopovar = 2, // cospa, dcacascdau, dcabachtopv, dcapos
       continue; // cosbachbaryon
     if (itopovar == 14 && ifile > 7)
       continue; // dcabachbaryon
+    if (itopovar == 15 && ifile > 5)
+      continue; // dcav0topv
     numFilesEffBis++;
     if (Choice == 0)
     {

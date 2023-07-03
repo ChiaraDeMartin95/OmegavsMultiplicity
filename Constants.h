@@ -3,7 +3,7 @@ const Int_t numMult = 12; // 10 // number of multiplicity sub-intervals
 //22o_pass4_Train89684
 const Int_t numPart = 9; // number of particles
 const Int_t numFiles = 8;
-const Int_t numTopoVar = 15;
+const Int_t numTopoVar = 17;
 const Int_t numChoice = 7;    // mean, sigma, purity, yield, significance, efficiency, yieldCorr
 const Int_t numParticles = 3; // part, apart, sum
 const Int_t numfittipo = 6;
@@ -50,8 +50,8 @@ TString SIsBkgParab[2] = {"_BkgRetta", "_BkgParab"};
 TString TypeHisto[numChoice] = {"Mean", "Sigma", "Purity", "Yield", "Significance", "Efficiency", "YieldCorr"};
 TString TitleY[numChoice] = {"Mean (GeV/#it{c}^{2})", "Sigma (GeV/#it{c}^{2})", "S/(S+B)", "1/#it{N}_{evt} d#it{N}/d#it{p}_{T} (GeV/#it{c})^{-1}", "Yield/#sigma_{Yield}", "Efficiency x acceptance", "1/#it{N}_{evt} d#it{N}/d#it{p}_{T} (GeV/#it{c})^{-1}"};
 
-TString TopoVar[numTopoVar] = {"casccospa", "dcacascdau", "dcabachtopv", "dcapostopv", "dcanegtopv", "lambdamasswin", "rejcomp", "nsigmatpcKa", "cascradius", "v0radius", "dcav0dau", "v0cospa", "casclifetime", "cosbachbar", "dcabachbar"};
-TString TopoVarSigned[numTopoVar] = {"casccospa > ", "dcacascdau < ", "dcabachtopv > ", "dcapostopv > ", "dcanegtopv > ", "|mV0 - mLambda| < ", "|mCasc-mXi| > ", "|n#sigma_{Ka}^{TPC}| < ", "rXi > ", "rV0 > ", "dcav0dau < ", "v0cospa > ", "c#tau < ", "cosbachbar < ", "dcabachbar > "};
+TString TopoVar[numTopoVar] = {"casccospa", "dcacascdau", "dcabachtopv", "dcapostopv", "dcanegtopv", "lambdamasswin", "rejcomp", "nsigmatpcKa", "cascradius", "v0radius", "dcav0dau", "v0cospa", "casclifetime", "cosbachbar", "dcabachbar", "dcav0topv"};
+TString TopoVarSigned[numTopoVar] = {"casccospa > ", "dcacascdau < ", "dcabachtopv > ", "dcapostopv > ", "dcanegtopv > ", "|mV0 - mLambda| < ", "|mCasc-mXi| > ", "|n#sigma_{Ka}^{TPC}| < ", "rXi > ", "rV0 > ", "dcav0dau < ", "v0cospa > ", "c#tau < ", "cosbachbar < ", "dcabachbar > ", "dcav0topv > "};
 
 TString TitleXPt = "#it{p}_{T} (GeV/#it{c})";
 TString TitleYYield = "1/#it{N}_{evt} d#it{N}/d#it{p}_{T} (GeV/#it{c})^{-1}";

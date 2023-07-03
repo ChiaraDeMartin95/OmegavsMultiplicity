@@ -461,6 +461,8 @@ void YieldsVsPt(Bool_t isSysStudy = 1,
   Float_t errsigma[numPt] = {0};
   Float_t sigmaNarrow[numPt] = {0};
   Float_t errsigmaNarrow[numPt] = {0};
+  Float_t LowLimit[numPt] = {0};
+  Float_t UpLimit[numPt] = {0};
   Float_t b[numPt] = {0};
   Float_t errb[numPt] = {0};
   Float_t SSB[numPt] = {0};
@@ -879,18 +881,21 @@ void YieldsVsPt(Bool_t isSysStudy = 1,
 
     // cout << mean[pt] - sigmacentral * sigma[pt] << "-" << mean[pt] + sigmacentral * sigma[pt] << endl;
     //  Compute yield
+    LowLimit[pt] = hInvMass[pt]->GetXaxis()->GetBinLowEdge(hInvMass[pt]->GetXaxis()->FindBin(mean[pt] - sigmacentral * sigma[pt]));
+    UpLimit[pt] = hInvMass[pt]->GetXaxis()->GetBinUpEdge(hInvMass[pt]->GetXaxis()->FindBin(mean[pt] + sigmacentral * sigma[pt]));
+
     b[pt] = 0;
     errb[pt] = 0;
     if (isBkgParab)
     {
-      b[pt] = bkg2[pt]->Integral(mean[pt] - sigmacentral * sigma[pt], mean[pt] + sigmacentral * sigma[pt]);
-      errb[pt] = totalbis[pt]->IntegralError(mean[pt] - sigmacentral * sigma[pt], mean[pt] + sigmacentral * sigma[pt], fFitResultPtr1[pt]->GetParams(),
+      b[pt] = bkg2[pt]->Integral(LowLimit[pt], UpLimit[pt]);
+      errb[pt] = totalbis[pt]->IntegralError(LowLimit[pt], UpLimit[pt], fFitResultPtr1[pt]->GetParams(),
                                              (fFitResultPtr1[pt]->GetCovarianceMatrix()).GetMatrixArray());
     }
     else
     {
-      b[pt] = bkg1[pt]->Integral(mean[pt] - sigmacentral * sigma[pt], mean[pt] + sigmacentral * sigma[pt]);
-      errb[pt] = totalbis[pt]->IntegralError(mean[pt] - sigmacentral * sigma[pt], mean[pt] + sigmacentral * sigma[pt], fFitResultPtr1[pt]->GetParams(),
+      b[pt] = bkg1[pt]->Integral(LowLimit[pt], UpLimit[pt]);
+      errb[pt] = totalbis[pt]->IntegralError(LowLimit[pt], UpLimit[pt], fFitResultPtr1[pt]->GetParams(),
                                              (fFitResultPtr1[pt]->GetCovarianceMatrix()).GetMatrixArray());
     }
     b[pt] = b[pt] / hInvMass[pt]->GetBinWidth(1);
@@ -898,7 +903,7 @@ void YieldsVsPt(Bool_t isSysStudy = 1,
 
     entries_range[pt] = 0;
     for (Int_t l = hInvMass[pt]->GetXaxis()->FindBin(mean[pt] - sigmacentral * sigma[pt]); l <= hInvMass[pt]->GetXaxis()->FindBin(mean[pt] + sigmacentral * sigma[pt]); l++)
-    {
+    { //I inlcude bins where the limits lie
       entries_range[pt] += hInvMass[pt]->GetBinContent(l);
     }
 
@@ -990,7 +995,7 @@ void YieldsVsPt(Bool_t isSysStudy = 1,
     Soutputfile += Form("_Mult%.1f-%.1f", MultiplicityPerc[mul], MultiplicityPerc[mul + 1]);
   if (isSysStudy)
     Soutputfile += SysPath;
-  // Soutputfile += "_Test";
+  Soutputfile += "_Test";
 
   // save canvases
   canvas[0]->SaveAs(Soutputfile + ".pdf(");

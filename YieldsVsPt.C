@@ -128,28 +128,32 @@ Float_t min_histo[numPart] = {0.42, 1.09, 1.09, 1.29, 1.29, 1.29, 1.62, 1.62, 1.
 Float_t max_histo[numPart] = {0.57, 1.14, 1.14, 1.35, 1.35, 1.35, 1.72, 1.72, 1.72};
 Float_t liminf[numPart] = {0.45, 1.1153, 1.1153, 1.29, 1.29, 1.29, 1.63, 1.63, 1.63}; // estremi regione fit del bkg e total
 Float_t limsup[numPart] = {0.545, 1.1168, 1.1168, 1.35, 1.35, 1.35, 1.71, 1.71, 1.71};
+Float_t liminfDefault[numPart] = {0};
+Float_t limsupDefault[numPart] = {0};
 
-// histogram limits
-// Omega 22o_pass3: 1.62-1.72
-// Omega 22m_pass4: 1.64 - 1.69
-
-void YieldsVsPt(Bool_t isSysStudy = 1,
-                TString SysPath = "_Sel3July",
+void YieldsVsPt(Int_t SysSigExtr = 0, // 0: default, 1: pol1 bkg, 2: tighter range + pol2, 3: tighter range + pol1
+                Bool_t isSysStudy = 1,
+                TString SysPath = "_Train100720" /*"_Sel3July"*/,
                 Int_t part = 8,
                 Bool_t isYAxisMassZoomed = 0,
                 Int_t MassRebin = 2,
                 Int_t MultType = 1, // 0: no mult for backward compatibility, 1: FT0M, 2: FV0A
                 Bool_t isMB = 1,
                 Int_t mul = 0,
-                TString year = "LHC22o_pass4_Train89684" /*"LHC22o_pass3_Train75538" /*"LHC22r_pass3_Train67853"*/,
+                TString year = "LHC22o_pass4_Train99659" /*"LHC22o_pass4_Train89684" /*"LHC22o_pass3_Train75538" /*"LHC22r_pass3_Train67853"*/,
                 TString SPathIn = "OutputFilesCascPPTask/LHC22o_pass4/AnalysisResults",
                 TString SPathInEvt = "AnalysisResultsCascQATask/LHC22o_pass4/AnalysisResultsEvts",
                 TString OutputDir = "Yields",
                 Bool_t UseTwoGauss = 1,
                 Bool_t isBkgParab = 1,
                 Bool_t isMeanFixedPDG = 0,
-                Float_t sigmacentral = 4.2)
+                Float_t sigmacentral = 4.2,
+                Int_t evFlag = 1 // 0: INEL - 1; 1: INEL > 0; 2: INEL > 1
+)
 {
+
+  if (SysSigExtr == 1)
+    isBkgParab = 0;
 
   if (mul > numMult)
   {
@@ -205,12 +209,22 @@ void YieldsVsPt(Bool_t isSysStudy = 1,
   TH2F *h2;
   TH2F *h2Bis;
   TH1F *hEvents;
+  TH2F *hEventsFT0M2D;
+  TH2F *hEventsFV0A2D;
   TH1F *hEventsFT0M;
   TH1F *hEventsFV0A;
   Int_t MultLowBin = 0;
   Int_t MultUpBin = 0;
 
-  dir = (TFile *)filein->Get("lf-cascpostprocessing");
+  if (SysPath == "_Train100720")
+  {
+    if (part == 3 || part == 4 || part == 5)
+      dir = (TFile *)filein->Get("lf-cascpostprocessing_id4873");
+    else if (part == 6 || part == 7 || part == 8)
+      dir = (TFile *)filein->Get("lf-cascpostprocessing_id4477");
+  }
+  else
+    dir = (TFile *)filein->Get("lf-cascpostprocessing");
   if (!dir)
   {
     cout << "dir not available" << endl;
@@ -279,18 +293,34 @@ void YieldsVsPt(Bool_t isSysStudy = 1,
     cout << "hEvents not available " << endl;
     return;
   }
-  hEventsFT0M = (TH1F *)dirEvt->Get("hCentFT0M");
-  if (!hEventsFT0M)
+  // hEventsFT0M = (TH1F *)dirEvt->Get("hCentFT0M");
+  hEventsFT0M2D = (TH2F *)dirEvt->Get("hCentFT0M");
+  if (!hEventsFT0M2D)
   {
     cout << "hCentFT0M not available " << endl;
     return;
   }
 
-  hEventsFV0A = (TH1F *)dirEvt->Get("hCentFV0A");
-  if (!hEventsFV0A)
+  hEventsFV0A2D = (TH2F *)dirEvt->Get("hCentFV0A");
+  if (!hEventsFV0A2D)
   {
     cout << "hCentFV0A not available " << endl;
     return;
+  }
+  if (evFlag == 2)
+  { // INEL > 1
+    hEventsFT0M = (TH1F *)hEventsFT0M2D->ProjectionX("hEventsFT0M", hEventsFT0M2D->GetYaxis()->FindBin(2.), hEventsFT0M2D->GetYaxis()->FindBin(2.));
+    hEventsFV0A = (TH1F *)hEventsFV0A2D->ProjectionX("hEventsFV0A", hEventsFV0A2D->GetYaxis()->FindBin(2.), hEventsFV0A2D->GetYaxis()->FindBin(2.));
+  }
+  else if (evFlag == 1)
+  { // INEL > 0
+    hEventsFT0M = (TH1F *)hEventsFT0M2D->ProjectionX("hEventsFT0M", hEventsFT0M2D->GetYaxis()->FindBin(1.), hEventsFT0M2D->GetYaxis()->FindBin(2.));
+    hEventsFV0A = (TH1F *)hEventsFV0A2D->ProjectionX("hEventsFV0A", hEventsFV0A2D->GetYaxis()->FindBin(1.), hEventsFV0A2D->GetYaxis()->FindBin(2.));
+  }
+  else
+  { // INEL
+    hEventsFT0M = (TH1F *)hEventsFT0M2D->ProjectionX("hEventsFT0M", hEventsFT0M2D->GetYaxis()->FindBin(0.), hEventsFT0M2D->GetYaxis()->FindBin(2.));
+    hEventsFV0A = (TH1F *)hEventsFV0A2D->ProjectionX("hEventsFV0A", hEventsFV0A2D->GetYaxis()->FindBin(0.), hEventsFV0A2D->GetYaxis()->FindBin(2.));
   }
 
   if (isMB == 1)
@@ -331,45 +361,11 @@ void YieldsVsPt(Bool_t isSysStudy = 1,
 
   const Int_t numPt = 17; // default: 19; topo: 11;
 
-  // Xi
-  //  Float_t binpt[numPt + 1] = {0.4, 0.6, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0, 2.5, 3, 4}; // 10
-  //  Float_t binpt[numPt + 1] = {0.4, 0.6, 0.8, 1.0, 1.2, 1.6, 2.0};
-  // Float_t binpt[numPt + 1] = {0.6, 1.0, 1.2, 1.5, 1.8, 2.1, 2.4, 2.7, 3.0, 4.0};
-
-  // Float_t binpt[numPt + 1] = {0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0,
-  // 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0,
-  // 2.2, 2.6, 3.0, 3.5, 4.0, 4.5, 5.0};
-
-  // Omega 22o_pass3
-  // Float_t binpt[numPt + 1] = {0.4, 0.6, 0.8, 1.0,
-  //                          1.2, 1.4, 1.6, 1.8, 2.0,
-  //                          2.5, 3.5, 5.0};
-
-  // Omega 22m_pass4
-  // Float_t binpt[numPt + 1] = {0.4, 0.6, 0.8, 1.0, 1.1,
-  //                          1.2, 1.3, 1.4, 1.5, 1.6,
-  //                        1.7, 1.8, 1.9, 2.0, 2.1,
-  //                      2.2, 2.3, 2.4, 2.5, 2.7,
-  //                    2.9, 3.1, 3.3, 3.5, 4.0,
-  //                  4.5, 5.0, 6.0, 8.0};
-  // 28
-
-  // 17
   // default for 22m_pass4_Train79153
   Float_t binpt[numPt + 1] = {0.8, 1.0,
                               1.2, 1.4, 1.6, 1.8, 2.0,
                               2.2, 2.4, 2.6, 2.8, 3.0,
                               3.5, 4.0, 4.5, 5.0, 6.0, 8.0};
-
-  // Float_t binpt[numPt + 1] = {0.4, 0.6, 0.8, 1.0,
-  //                             1.2, 1.4, 1.6, 1.8, 2.0,
-  //                             2.2, 2.4, 2.6, 2.8, 3.0,
-  //                             3.5, 4.0, 4.5, 5.0, 6.0, 8.0};
-
-  // for topo studies
-  // Float_t binpt[numPt + 1] = {0.4, 0.8,
-  //                          1.2, 1.6, 2.0,
-  //                      2.4, 2.8, 3.2, 4.0, 5.0, 6.0, 8.0};
 
   TString SPt[numPt] = {""};
   TH1F *hInvMass[numPt];
@@ -525,8 +521,22 @@ void YieldsVsPt(Bool_t isSysStudy = 1,
         */
       liminf[part] = 1.63;
       limsup[part] = 1.71;
-      min_histo[part] = 1.6;
-      max_histo[part] = 1.74;
+      liminfDefault[part] = 1.626;
+      limsupDefault[part] = 1.72;
+      //min_histo[part] = 1.6;
+      min_histo[part] = 1.626;
+      //max_histo[part] = 1.74;
+      max_histo[part] = 1.72;
+      if (SysSigExtr == 2)
+      {
+        liminf[part] = 1.635;
+        limsup[part] = 1.705;
+      }
+      if (SysSigExtr == 3)
+      {
+        liminf[part] = 1.626;
+        limsup[part] = 1.715;
+      }
     }
 
     if (part == 6 || part == 7 || part == 8)
@@ -900,10 +910,10 @@ void YieldsVsPt(Bool_t isSysStudy = 1,
     lineBkgLimitB[pt] = new TLine(UpperLimitLSBOmega, 0, UpperLimitLSBOmega, hInvMass[pt]->GetMaximum());
     lineBkgLimitC[pt] = new TLine(limsup[part], 0, limsup[part], hInvMass[pt]->GetMaximum());
     lineBkgLimitD[pt] = new TLine(LowerLimitRSBOmega, 0, LowerLimitRSBOmega, hInvMass[pt]->GetMaximum());
-    lineBkgLimitA[pt]->SetLineColor(kViolet+1);
-    lineBkgLimitB[pt]->SetLineColor(kViolet+1);
-    lineBkgLimitC[pt]->SetLineColor(kViolet+1);
-    lineBkgLimitD[pt]->SetLineColor(kViolet+1);
+    lineBkgLimitA[pt]->SetLineColor(kViolet + 1);
+    lineBkgLimitB[pt]->SetLineColor(kViolet + 1);
+    lineBkgLimitC[pt]->SetLineColor(kViolet + 1);
+    lineBkgLimitD[pt]->SetLineColor(kViolet + 1);
     lineBkgLimitA[pt]->Draw("same");
     lineBkgLimitB[pt]->Draw("same");
     lineBkgLimitC[pt]->Draw("same");
@@ -1069,8 +1079,8 @@ void YieldsVsPt(Bool_t isSysStudy = 1,
   legendYield->AddEntry(histoYield, "w/ bkg subtraction", "pl");
   legendYield->Draw("");
 
-  TCanvas *canvasSummary = new TCanvas("canvasSummary", "canvasSummary", 1300, 1000);
-  canvasSummary->Divide(2, 2);
+  TCanvas *canvasSummary = new TCanvas("canvasSummary", "canvasSummary", 1700, 1000);
+  canvasSummary->Divide(3, 2);
   TCanvas *canvasSummaryBis = new TCanvas("canvasSummaryBis", "canvasSummaryBis", 1950, 700);
   canvasSummaryBis->Divide(3, 1);
 
@@ -1175,7 +1185,7 @@ void YieldsVsPt(Bool_t isSysStudy = 1,
     gPad->SetBottomMargin(0.14);
     gPad->SetLeftMargin(0.18);
 
-    hInvMass[pt]->GetXaxis()->SetRangeUser(liminf[part], limsup[part]);
+    hInvMass[pt]->GetXaxis()->SetRangeUser(liminfDefault[part], limsupDefault[part]);
     hInvMass[pt]->Draw("");
     functions1[pt]->Draw("same");
     functions2[pt]->Draw("same");
@@ -1202,6 +1212,8 @@ void YieldsVsPt(Bool_t isSysStudy = 1,
   if (isSysStudy)
     Soutputfile += SysPath;
   // Soutputfile += "_Test";
+  Soutputfile += "_" + EventType[evFlag];
+  Soutputfile += SSysSigExtr[SysSigExtr];
 
   // save canvases
   canvas[0]->SaveAs(Soutputfile + ".pdf(");
@@ -1276,12 +1288,14 @@ void YieldsVsPt(Bool_t isSysStudy = 1,
   StyleHisto(hEventsFV0AFinal, 0, 1.2 * hEventsFV0AFinal->GetBinContent(hEventsFV0AFinal->GetMaximumBin()), 1, 1, "FV0A Multiplicity percentile", "Counts", "hEventsFV0AFinal", 0, 0, 0, 1.4, 1.4, 1.2);
   hEventsFV0AFinal->Draw("same");
   canvasFV0A->SaveAs(Soutputfile + "_FV0A.pdf");
-  canvasFV0A->Close();
+  canvasFV0A->SaveAs(Soutputfile + "_FV0A.png");
+  // canvasFV0A->Close();
 
   TCanvas *canvasFT0M = new TCanvas("canvasFT0M", "canvasFT0M", 1000, 800);
   StyleCanvas(canvasFT0M, 0.14, 0.05, 0.11, 0.15);
   StyleHisto(hEventsFT0MFinal, 0, 1.2 * hEventsFT0MFinal->GetBinContent(hEventsFT0MFinal->GetMaximumBin()), 1, 1, "FT0M Multiplicity percentile", "Counts", "hEventsFT0MFinal", 0, 0, 0, 1.4, 1.4, 1.2);
   hEventsFT0MFinal->Draw("same");
   canvasFT0M->SaveAs(Soutputfile + "_FT0M.pdf");
-  canvasFT0M->Close();
+  canvasFT0M->SaveAs(Soutputfile + "_FT0M.png");
+  // canvasFT0M->Close();
 }

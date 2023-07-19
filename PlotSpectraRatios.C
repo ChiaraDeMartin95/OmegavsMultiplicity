@@ -113,13 +113,15 @@ void StylePad(TPad *pad, Float_t LMargin, Float_t RMargin, Float_t TMargin, Floa
 
 void PlotSpectraRatios(Int_t part = 8,
                        Int_t ChosenMult = numMult,
-                       TString SysPath = "_Sel23June" /*"_Sel6June"*/,
+                       TString SysPath = "_Train100720" /*"_Sel23June" /*"_Sel6June"*/,
                        TString OutputDir = "PtSpectraMultClasses/",
                        Bool_t isBkgParab = 1,
-                       TString year = "LHC22o_pass4_Train89684" /*"LHC22m_pass4_Train79153"*/,
+                       TString year = "LHC22o_pass4_Train99659" /*"LHC22o_pass4_Train89684" /*"LHC22m_pass4_Train79153"*/,
                        Bool_t isSysStudy = 1,
                        Int_t MultType = 1, // 0: no mult for backward compatibility, 1: FT0M, 2: FV0A
-                       Bool_t UseTwoGauss = 1)
+                       Bool_t UseTwoGauss = 1,
+                       Int_t evFlag = 1 // 0: INEL - 1; 1: INEL > 0; 2: INEL > 1
+)
 {
 
   gStyle->SetOptStat(0);
@@ -143,7 +145,9 @@ void PlotSpectraRatios(Int_t part = 8,
   PathInSist = "SystematicErrors/TotalSysError_" + year + "_";
   PathInSist += Spart[part];
   // PathInSist += Smolt[numMult];
-  //if (isSysStudy) PathInSist += SysPath;
+  if (isSysStudy)
+    PathInSist += SysPath;
+  PathInSist += "_" + EventType[evFlag];
   PathInSist += ".root";
 
   TFile *fileIn[numMult + 1];
@@ -158,6 +162,7 @@ void PlotSpectraRatios(Int_t part = 8,
   stringout += SIsBkgParab[isBkgParab];
   if (isSysStudy)
     stringout += SysPath;
+  stringout += "_" + EventType[evFlag];
   stringoutpdf = stringout;
   stringout += ".root";
   TFile *fileout = new TFile(stringout, "RECREATE");
@@ -229,6 +234,7 @@ void PlotSpectraRatios(Int_t part = 8,
     PathIn += Smolt[m];
     if (isSysStudy)
       PathIn += SysPath;
+    PathIn += "_" + EventType[evFlag];
     PathIn += ".root";
     cout << "Path in : " << PathIn << endl;
 

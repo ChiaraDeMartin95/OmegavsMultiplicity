@@ -127,12 +127,14 @@ void MeanSigmaPurityMultRatio(Int_t part = 6,
                               Int_t ChosenMult = numMult,
                               Int_t Choice = 0,
                               Bool_t isBkgParab = 1,
-                              TString SysPath = ""/*"_Sel23June" /*"_Sel6June"*/,
+                              TString SysPath = "_Train100720" /*"_Sel23June" /*"_Sel6June"*/,
                               TString OutputDir = "MeanSigmaPurityMultClasses/",
-                              TString year = "LHC22o_pass4_Train89684" /*"LHC22m_pass4_Train79153"*/,
+                              TString year = "LHC22o_pass4_Train99659"/*"LHC22o_pass4_Train89684" /*"LHC22m_pass4_Train79153"*/,
                               Bool_t isSysStudy = 1,
                               Int_t MultType = 1, // 0: no mult for backward compatibility, 1: FT0M, 2: FV0A
-                              Bool_t UseTwoGauss = 1)
+                              Bool_t UseTwoGauss = 1,
+                              Int_t evFlag = 1 // 0: INEL - 1; 1: INEL > 0; 2: INEL > 1
+)
 {
 
   gStyle->SetOptStat(0);
@@ -189,6 +191,7 @@ void MeanSigmaPurityMultRatio(Int_t part = 6,
   stringout += SIsBkgParab[isBkgParab];
   if (isSysStudy)
     stringout += SysPath;
+  stringoutpdf += "_" + EventType[evFlag];
   stringoutpdf = stringout;
   stringout += ".root";
   TFile *fileout = new TFile(stringout, "RECREATE");
@@ -250,6 +253,7 @@ void MeanSigmaPurityMultRatio(Int_t part = 6,
     PathIn += Smolt[m];
     if (isSysStudy)
       PathIn += SysPath;
+    PathIn += "_" + EventType[evFlag];
     PathIn += ".root";
     cout << "Path in : " << PathIn << endl;
 
@@ -316,7 +320,7 @@ void MeanSigmaPurityMultRatio(Int_t part = 6,
     fHistSpectrumScaled[m]->SetMarkerColor(ColorMult[m]);
     fHistSpectrumScaled[m]->SetLineColor(ColorMult[m]);
     fHistSpectrumScaled[m]->SetMarkerStyle(MarkerMult[m]);
-    fHistSpectrumScaled[m]->SetMarkerSize(0.6*SizeMult[m]);
+    fHistSpectrumScaled[m]->SetMarkerSize(0.6 * SizeMult[m]);
     fHistSpectrumScaled[m]->Draw("same e0x0");
     if (Choice == 3)
       sScaleFactorFinal[m] = Form(" (x2^{%i})", int(log2(ScaleFactorFinal[m])));

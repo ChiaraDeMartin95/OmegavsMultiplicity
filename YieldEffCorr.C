@@ -69,16 +69,18 @@ TString titlePt = "p_{T} (GeV/c)";
 TString titleYield = "1/N_{ev} dN/dp_{T}";
 
 void YieldEffCorr(Int_t part = 6,
-                  TString SPathInEff = "eff_LHC22o_pass4_Sel23June.root" /*"eff6June.root"*/,
-                  TString SysPath = "_Sel23June",
+                  TString SPathInEff = "eff_LHC22o_pass4_Train100720.root" /*"eff_LHC22o_pass4_Sel23June.root" /*"eff6June.root"*/,
+                  TString SysPath = "_Train100720" /*"_Sel23June"*/,
                   TString OutputDir = "Yields",
-                  TString year = "LHC22o_pass4_Train89684" /*"LHC22m_pass4_Train79153"*/,
+                  TString year = "LHC22o_pass4_Train99659" /*"LHC22o_pass4_Train89684" /*"LHC22m_pass4_Train79153"*/,
                   Bool_t isBkgParab = 1,
                   Bool_t isSysStudy = 1,
                   Int_t MultType = 1, // 0: no mult for backward compatibility, 1: FT0M, 2: FV0M
                   Bool_t isMB = 1,
                   Int_t mul = 0,
-                  Bool_t UseTwoGauss = 1)
+                  Bool_t UseTwoGauss = 1,
+                  Int_t evFlag = 1 // 0: INEL - 1; 1: INEL > 0; 2: INEL > 1
+)
 {
 
   if (mul > numMult)
@@ -105,6 +107,7 @@ void YieldEffCorr(Int_t part = 6,
     Sfileout += Form("_Mult%.1f-%.1f", MultiplicityPerc[mul], MultiplicityPerc[mul + 1]);
   if (isSysStudy)
     Sfileout += SysPath;
+  Sfileout += "_" + EventType[evFlag];
   // Sfileout += "_Test";
 
   TString SPathIn;
@@ -118,6 +121,7 @@ void YieldEffCorr(Int_t part = 6,
     SPathIn += Form("_Mult%.1f-%.1f", MultiplicityPerc[mul], MultiplicityPerc[mul + 1]);
   if (isSysStudy)
     SPathIn += SysPath;
+  SPathIn += "_" + EventType[evFlag];
   // SPathIn += "_FewPtBins";
   SPathIn += ".root";
 
@@ -154,11 +158,13 @@ void YieldEffCorr(Int_t part = 6,
   TString dirName = "";
   if (SysPath == "_Sel23June")
     dirName = "effCascade";
+  else if (SysPath == "_Train100720")
+    dirName = "effAcc";
   else
     dirName = "effOmega";
   TDirectoryFile *dir = (TDirectoryFile *)fileinEff->Get(dirName);
   TString inputNameEff = "hEff";
-  if (SysPath == "_Sel23June")
+  if (SysPath == "_Sel23June" || SysPath == "_Train100720")
     inputNameEff += "Casc";
   else
   {
@@ -182,8 +188,8 @@ void YieldEffCorr(Int_t part = 6,
   }
 
   histoYieldCorr = (TH1F *)histoYield->Clone("histoYieldCorr");
-  //histoYieldCorr->Divide(histoEff);
-  
+  // histoYieldCorr->Divide(histoEff);
+
   Float_t RelErr = 0;
   for (Int_t i = 1; i <= histoYield->GetNbinsX(); i++)
   {
@@ -192,11 +198,11 @@ void YieldEffCorr(Int_t part = 6,
     cout << histoEff->GetBinContent(i) << " +- " << histoEff->GetBinError(i) << endl;
     cout << histoYieldCorr->GetBinContent(i) << " +- " << histoYieldCorr->GetBinError(i) << endl;
     histoYieldCorr->SetBinContent(i, histoYield->GetBinContent(i) / histoEff->GetBinContent(histoEff->FindBin(histoYield->GetBinCenter(i))));
-    RelErr = sqrt(pow(histoYield->GetBinError(i)/histoYield->GetBinContent(i), 2) + pow(histoEff->GetBinError(histoEff->FindBin(histoYield->GetBinCenter(i)))/histoEff->GetBinContent(histoEff->FindBin(histoYield->GetBinCenter(i))), 2));
-    //histoYieldCorr->SetBinError(i, histoYield->GetBinError(i) / histoEff->GetBinContent(histoEff->FindBin(histoYield->GetBinCenter(i))));
+    RelErr = sqrt(pow(histoYield->GetBinError(i) / histoYield->GetBinContent(i), 2) + pow(histoEff->GetBinError(histoEff->FindBin(histoYield->GetBinCenter(i))) / histoEff->GetBinContent(histoEff->FindBin(histoYield->GetBinCenter(i))), 2));
+    // histoYieldCorr->SetBinError(i, histoYield->GetBinError(i) / histoEff->GetBinContent(histoEff->FindBin(histoYield->GetBinCenter(i))));
     histoYieldCorr->SetBinError(i, RelErr * histoYieldCorr->GetBinContent(i));
   }
-  
+
   /*
   cout << "Check: " << endl;
   cout << histoYield->GetNbinsX() << endl;

@@ -121,6 +121,7 @@ void StylePad(TPad *pad, Float_t LMargin, Float_t RMargin, Float_t TMargin, Floa
 // fits them to get pt-integrated yields
 
 void FinalYieldvsMult(
+    Int_t dNdEtaFlag = 1,
     Int_t part = 8,
     TString SysPath = "_Sel23June" /*"_Sel6June"*/,
     Bool_t isBkgParab = 1,
@@ -220,6 +221,7 @@ void FinalYieldvsMult(
   fileInSistFitChoice = TFile::Open(PathInSistFitChoice, "READ");
 
   hYield = (TH1F *)fileIn->Get("hYield");
+  hYield->SetName("hYieldStrange");
   hYieldSist = (TH1F *)fileIn->Get("hYieldSist");
   hYieldSistRelFitChoice = (TH1F *)fileInSistFitChoice->Get("hRelUncFitChoice");
   hYieldSistFitChoice = (TH1F *)hYieldSist->Clone("hYieldSistFitChoice");
@@ -258,16 +260,94 @@ void FinalYieldvsMult(
   canvasYield->SaveAs(stringoutpdf + "_YieldsvsPerc.png");
 
   //*********** Draw yield vs dNdeta ************//
+  Float_t dNdEta[numMult + 1] = {0};
+  Float_t dNdEtaErrorL[numMult + 1] = {0};
+  Float_t dNdEtaErrorR[numMult + 1] = {0};
+  Float_t dNdEtaMB = 0;
+  Float_t dNdEtaMBErrorL = 0;
+  Float_t dNdEtaMBErrorR = 0;
+  Float_t dNdEtaToMB[numMult + 1] = {0};
+  Float_t dNdEtaErrorLToMB[numMult + 1] = {0};
+  Float_t dNdEtaErrorRToMB[numMult + 1] = {0};
+
   Float_t YieldsErrorsStat[numMult + 1] = {0};
   Float_t YieldsErrorsSist[numMult + 1] = {0};
   Float_t Yields[numMult + 1] = {0};
+  Float_t YieldMB = 0;
+  Float_t YieldMBErrorSist = 0;
+  Float_t YieldMBErrorStat = 0;
+  Float_t YieldsToMB[numMult + 1] = {0};
+  Float_t YieldsErrorsSistToMB[numMult + 1] = {0};
+  Float_t YieldsErrorsStatToMB[numMult + 1] = {0};
+
   for (Int_t i = 0; i < numMult; i++)
   {
     YieldsErrorsStat[i] = hYield->GetBinError(i + 1);
     YieldsErrorsSist[i] = hYieldSistTotal->GetBinError(i + 1);
     Yields[i] = hYield->GetBinContent(i + 1);
-    cout << "dNdeta " << dNdEtaRun2[i] << endl;
+    if (dNdEtaFlag == 0)
+    { // Run2
+      dNdEta[i] = dNdEtaRun2[i];
+      dNdEtaErrorL[i] = dNdEtaRun2ErrorL[i];
+      dNdEtaErrorR[i] = dNdEtaRun2ErrorR[i];
+    }
+    else if (dNdEtaFlag == 1)
+    { // Run3 Nicolò estimate
+      dNdEta[i] = dNdEtaRun3[i];
+      dNdEtaErrorL[i] = dNdEtaRun3ErrorL[i];
+      dNdEtaErrorR[i] = dNdEtaRun3ErrorR[i];
+    }
+    cout << "dNdeta " << dNdEta[i] << endl;
     cout << "Yields[" << i << "] = " << Yields[i] << endl;
+  }
+
+  YieldMBErrorStat = hYield->GetBinError(numMult + 1);
+  YieldMBErrorSist = hYieldSistTotal->GetBinError(numMult + 1);
+  YieldMB = hYield->GetBinContent(numMult + 1);
+  cout << "YieldMB = " << YieldMB << endl;
+  cout << "YieldMBErrorStat = " << YieldMBErrorStat << endl;
+
+  if (dNdEtaFlag == 0)
+  { // Run2
+    dNdEtaMB = dNdEtaRun2MB;
+    dNdEtaMBErrorL = dNdEtaRun2MBErrorL;
+    dNdEtaMBErrorR = dNdEtaRun2MBErrorR;
+  }
+  else if (dNdEtaFlag == 1)
+  { // Run3 Nicolò estimate
+    dNdEtaMB = dNdEtaRun3MB;
+    dNdEtaMBErrorL = dNdEtaRun3MBErrorL;
+    dNdEtaMBErrorR = dNdEtaRun3MBErrorR;
+  }
+  cout << "\n\e[35mdNdeta MB " << dNdEtaMB << "\n\e[39m" << endl;
+  for (Int_t i = 0; i < numMult; i++)
+  {
+    dNdEtaToMB[i] = dNdEta[i] / dNdEtaMB;
+    dNdEtaErrorLToMB[i] = dNdEtaToMB[i] * sqrt(pow(dNdEtaErrorL[i] / dNdEta[i], 2) + pow(dNdEtaMBErrorL / dNdEtaMB, 2));
+    dNdEtaErrorRToMB[i] = dNdEtaToMB[i] * sqrt(pow(dNdEtaErrorR[i] / dNdEta[i], 2) + pow(dNdEtaMBErrorR / dNdEtaMB, 2));
+    cout << "dNdeta  " << dNdEta[i] << endl;
+    cout << "dNdeta / dNdetaMB " << dNdEtaToMB[i] << endl;
+    YieldsToMB[i] = Yields[i] / YieldMB;
+    YieldsErrorsStatToMB[i] = YieldsToMB[i] * sqrt(pow(YieldsErrorsStat[i] / Yields[i], 2) + pow(YieldMBErrorStat / YieldMB, 2));
+    YieldsErrorsSistToMB[i] = YieldsToMB[i] * sqrt(pow(YieldsErrorsSist[i] / Yields[i], 2) + pow(YieldMBErrorSist / YieldMB, 2));
+    cout << "Yields / YieldMB " << YieldsToMB[i] << endl;
+  }
+
+  Float_t YieldPubMB = 0;
+  Float_t YieldPubMBErrStat = 0;
+  Float_t YieldPubMBErrSist = 0;
+
+  if (part == 3)
+  { // Xi
+    YieldPubMB = YieldXiMB13TeV;
+    YieldPubMBErrStat = YieldXiMB13TeVErrStat;
+    YieldPubMBErrSist = YieldXiMB13TeVErrSist;
+  }
+  if (part == 8)
+  { // Omega
+    YieldPubMB = YieldOmegaMB13TeV;
+    YieldPubMBErrStat = YieldOmegaMB13TeVErrStat;
+    YieldPubMBErrSist = YieldOmegaMB13TeVErrSist;
   }
 
   Float_t xTitle = 40;
@@ -290,9 +370,17 @@ void FinalYieldvsMult(
   Int_t MarkerType = 20;
   Float_t MarkerSize = 1.5;
   Int_t LineStyle = 1;
-  Float_t UpperValueX = 30;
+  Float_t UpperValueX = 35;
   Float_t Up = 0.025;
   Float_t Low = 1e-4;
+
+  // fit points and get ratio
+  TF1 *fitPubYieldvsMult = new TF1("fitPubYieldvsMult", "pol1", 0, 35);
+  fitPubYieldvsMult->SetLineColor(kAzure + 7);
+  fitPubYieldvsMult->SetLineStyle(2);
+  TF1 *fitRun3YieldvsMult = new TF1("fitRun3YieldvsMult", "pol1", 0, 35);
+  fitRun3YieldvsMult->SetLineColor(1);
+  fitRun3YieldvsMult->SetLineStyle(2);
 
   TCanvas *canvasYieldvsdNdeta = new TCanvas("canvasYieldvsdNdeta", "canvasYieldvsdNdeta", 1500, 1500);
   StyleCanvas(canvasYieldvsdNdeta, 0.02, 0.15, 0.1, 0.02);
@@ -304,17 +392,18 @@ void FinalYieldvsMult(
   histoYieldDummy->GetYaxis()->SetTitleSize(40);
   histoYieldDummy->GetYaxis()->SetTitleOffset(1.75);
   SetTickLength(histoYieldDummy, tickX, tickY);
-  histoYieldDummy->Draw("");
+  histoYieldDummy->DrawClone("");
 
   TGraphAsymmErrors *ghistoYield;
   TGraphAsymmErrors *ghistoYieldSist;
-  ghistoYield = new TGraphAsymmErrors(numMult, dNdEtaRun2, Yields, 0, 0, YieldsErrorsStat, YieldsErrorsStat);
-  ghistoYieldSist = new TGraphAsymmErrors(numMult, dNdEtaRun2, Yields, dNdEtaRun2ErrorL, dNdEtaRun2ErrorR, YieldsErrorsSist, YieldsErrorsSist);
+  ghistoYield = new TGraphAsymmErrors(numMult, dNdEta, Yields, 0, 0, YieldsErrorsStat, YieldsErrorsStat);
+  ghistoYieldSist = new TGraphAsymmErrors(numMult, dNdEta, Yields, dNdEtaErrorL, dNdEtaErrorR, YieldsErrorsSist, YieldsErrorsSist);
   StyleTGraphErrors(ghistoYield, ColorDiff, MarkerType, MarkerSize, LineStyle);
   StyleTGraphErrors(ghistoYieldSist, ColorDiff, MarkerType, MarkerSize, LineStyle);
   ghistoYield->SetFillColor(ColorDiff);
   ghistoYieldSist->SetFillStyle(0);
   ghistoYieldSist->SetFillColor(ColorDiff);
+  ghistoYield->Fit(fitRun3YieldvsMult, "R0");
   ghistoYieldSist->Draw("same p2");
   //  ghistoYieldSistMultUnCorr->SetFillStyle(3001);
   //  ghistoYieldSistMultUnCorr->SetFillColor(ColorDiff);
@@ -340,13 +429,207 @@ void FinalYieldvsMult(
   hYieldvsMultPubSist->SetMarkerStyle(20);
   hYieldvsMultPubSist->SetMarkerColor(kAzure + 7);
   hYieldvsMultPubSist->SetLineColor(kAzure + 7);
+
   canvasYieldvsdNdeta->cd();
+  hYieldvsMultPubStat->Fit("fitPubYieldvsMult", "R0");
   hYieldvsMultPubStat->Draw("same e0x0");
   hYieldvsMultPubSist->SetFillStyle(0);
   hYieldvsMultPubSist->Draw("same e2");
+  fitRun3YieldvsMult->Draw("same");
+  fitPubYieldvsMult->Draw("same");
   LegendTitle->Draw("");
   LegendPub->Draw("");
   canvasYieldvsdNdeta->SaveAs("YieldvsdNdeta.pdf");
+
+  // Yield/Yield MB vs dNdeta/dNdeta MB
+  TCanvas *canvasYieldvsdNdetaToMB = new TCanvas("canvasYieldvsdNdetaToMB", "canvasYieldvsdNdetaToMB", 1500, 1500);
+  StyleCanvas(canvasYieldvsdNdetaToMB, 0.02, 0.15, 0.1, 0.02);
+  histoYieldDummy->GetXaxis()->SetTitle(TitleXMultToMB);
+  histoYieldDummy->GetYaxis()->SetTitle(TitleYYieldPtIntToMB);
+  histoYieldDummy->GetXaxis()->SetRangeUser(0, 3.5);
+  histoYieldDummy->GetYaxis()->SetRangeUser(0, 5);
+  histoYieldDummy->DrawClone("");
+
+  Float_t YieldsPubToMB[10] = {0};
+  Float_t YieldsPubErrorsStatToMB[10] = {0};
+  Float_t YieldsPubErrorsSistToMB[10] = {0};
+  Float_t dNdEtaPubToMB[10] = {0};
+  Float_t dNdEtaErrorPubToMB[10] = {0};
+  for (Int_t i = 0; i < hYieldvsMultPubStat->GetNbinsX(); i++)
+  {
+    if (hYieldvsMultPubStat->GetBinContent(i + 1) == 0)
+      continue;  
+    dNdEtaPubToMB[i] = hYieldvsMultPubStat->GetBinCenter(i + 1) / dNdEtaRun2MB;
+    dNdEtaErrorPubToMB[i] = hYieldvsMultPubStat->GetBinWidth(i + 1) / dNdEtaRun2MB /2;
+    YieldsPubToMB[i] = hYieldvsMultPubStat->GetBinContent(i + 1) / YieldPubMB;
+    YieldsPubErrorsStatToMB[i] = YieldsPubToMB[i] * sqrt(pow(hYieldvsMultPubStat->GetBinError(i + 1)/hYieldvsMultPubStat->GetBinContent(i + 1), 2) + pow(YieldPubMBErrStat/YieldPubMB, 2));
+    YieldsPubErrorsSistToMB[i] = YieldsPubToMB[i] * sqrt(pow(hYieldvsMultPubSist->GetBinError(i + 1)/hYieldvsMultPubStat->GetBinContent(i + 1), 2) + pow(YieldPubMBErrSist/YieldPubMB, 2));
+    cout << hYieldvsMultPubStat->GetBinCenter(i + 1) << " dNdetaMB Run 2 " << dNdEtaRun2MB << endl;
+  }
+
+  TGraphAsymmErrors *ghistoYieldPubToMB;
+  TGraphAsymmErrors *ghistoYieldPubSistToMB;
+  ghistoYieldPubToMB = new TGraphAsymmErrors(numMult, dNdEtaPubToMB, YieldsPubToMB, 0, 0, YieldsPubErrorsStatToMB, YieldsPubErrorsStatToMB);
+  ghistoYieldPubSistToMB = new TGraphAsymmErrors(numMult, dNdEtaPubToMB, YieldsPubToMB, dNdEtaErrorPubToMB, dNdEtaErrorPubToMB, YieldsPubErrorsSistToMB, YieldsPubErrorsSistToMB);
+  StyleTGraphErrors(ghistoYieldPubToMB, kAzure + 7, MarkerType, MarkerSize, LineStyle);
+  StyleTGraphErrors(ghistoYieldPubSistToMB, kAzure + 7, MarkerType, MarkerSize, LineStyle);
+  ghistoYieldPubToMB->SetFillColor(kAzure + 7);
+  ghistoYieldPubSistToMB->SetFillStyle(0);
+  ghistoYieldPubSistToMB->SetFillColor(kAzure + 7);
+  ghistoYieldPubSistToMB->Draw("same p2");
+  ghistoYieldPubToMB->Draw("same e");
+
+  TGraphAsymmErrors *ghistoYieldToMB;
+  TGraphAsymmErrors *ghistoYieldSistToMB;
+  ghistoYieldToMB = new TGraphAsymmErrors(numMult, dNdEtaToMB, YieldsToMB, 0, 0, YieldsErrorsStatToMB, YieldsErrorsStatToMB);
+  ghistoYieldSistToMB = new TGraphAsymmErrors(numMult, dNdEtaToMB, YieldsToMB, dNdEtaErrorLToMB, dNdEtaErrorRToMB, YieldsErrorsSistToMB, YieldsErrorsSistToMB);
+  StyleTGraphErrors(ghistoYieldToMB, ColorDiff, MarkerType, MarkerSize, LineStyle);
+  StyleTGraphErrors(ghistoYieldSistToMB, ColorDiff, MarkerType, MarkerSize, LineStyle);
+  ghistoYieldToMB->SetFillColor(ColorDiff);
+  ghistoYieldSistToMB->SetFillStyle(0);
+  ghistoYieldSistToMB->SetFillColor(ColorDiff);
+  ghistoYieldSistToMB->Draw("same p2");
+  ghistoYieldToMB->Draw("same e");
+
+  // Ratio between fit functions
+  TCanvas *canvasRatio = new TCanvas("canvasRatio", "canvasRatio", 1500, 1500);
+  TH1F *hRatio = (TH1F *)histoYieldDummy->Clone("hRatio");
+  for (Int_t b = 1; b <= hRatio->GetNbinsX(); b++)
+  {
+    hRatio->SetBinContent(b, fitRun3YieldvsMult->Eval(hRatio->GetBinCenter(b)) / fitPubYieldvsMult->Eval(hRatio->GetBinCenter(b)));
+    hRatio->SetBinError(b, 0);
+  }
+  hRatio->SetMarkerStyle(20);
+  hRatio->SetMarkerColor(1);
+  hRatio->SetLineColor(1);
+  hRatio->SetMarkerSize(1.5);
+  hRatio->GetXaxis()->SetRangeUser(5, UpperValueX);
+  hRatio->GetYaxis()->SetRangeUser(0., 1.);
+  hRatio->GetYaxis()->SetTitle("Ratio");
+  hRatio->Draw();
+
+  // Ratio to pions
+  // Get Run3 pion yield vs mult
+  TString SDirName = "Run3Pions/Run3PiKPr";
+  TFile *filePionsPos;
+  TH1F *hTempPionsPos;
+  TFile *filePionsNeg;
+  TH1F *hTempPionsNeg;
+  TString sfilePionPos;
+  TString sfilePionNeg;
+  Float_t PionYield = 0;
+  Float_t PionYieldError = 0;
+  TH1F *hYieldPions = (TH1F *)fileIn->Get("hYield");
+  hYieldPions->SetName("hYieldPions");
+  for (Int_t i = 0; i < numMult + 1; i++)
+  {
+    PionYield = 0;
+    PionYieldError = 0;
+    sfilePionPos = Form("Yields_Pos_Pi_%.2f_%.2f_Levi.root", MultiplicityPerc[i], MultiplicityPerc[i + 1]);
+    sfilePionNeg = Form("Yields_Neg_Pi_%.2f_%.2f_Levi.root", MultiplicityPerc[i], MultiplicityPerc[i + 1]);
+    if (MultiplicityPerc[i] == 20 || MultiplicityPerc[i] == 25)
+    {
+      sfilePionPos = Form("Yields_Pos_Pi_%.2f_%.2f_Levi.root", 20.0, 30.0);
+      sfilePionNeg = Form("Yields_Neg_Pi_%.2f_%.2f_Levi.root", 20.0, 30.0);
+    }
+    if (MultiplicityPerc[i] == 30 || MultiplicityPerc[i] == 35)
+    {
+      sfilePionPos = Form("Yields_Pos_Pi_%.2f_%.2f_Levi.root", 30.0, 40.0);
+      sfilePionNeg = Form("Yields_Neg_Pi_%.2f_%.2f_Levi.root", 30.0, 40.0);
+    }
+    if (MultiplicityPerc[i] == 50)
+    {
+      sfilePionPos = Form("Yields_Pos_Pi_%.2f_%.2f_Levi.root", 50.0, 60.0);
+      sfilePionNeg = Form("Yields_Neg_Pi_%.2f_%.2f_Levi.root", 50.0, 60.0);
+    }
+    if (MultiplicityPerc[i] == 70)
+    {
+      sfilePionPos = Form("Yields_Pos_Pi_%.2f_%.2f_Levi.root", 70.0, 80.0);
+      sfilePionNeg = Form("Yields_Neg_Pi_%.2f_%.2f_Levi.root", 70.0, 80.0);
+    }
+    if (i == numMult)
+    {
+      // sfilePionPos = Form("Yields_Pos_Pi_%.2f_%.2f_Levi.root", 0.0, 100.0);
+      // sfilePionNeg = Form("Yields_Neg_Pi_%.2f_%.2f_Levi.root", 0.0, 100.0);
+      sfilePionPos = "Yields_Pos_Pi_Levi.root";
+      sfilePionNeg = "Yields_Neg_Pi_Levi.root";
+    }
+
+    filePionsPos = new TFile(SDirName + "/" + sfilePionPos, "");
+    filePionsNeg = new TFile(SDirName + "/" + sfilePionNeg, "");
+    hTempPionsPos = (TH1F *)filePionsPos->Get("IntegratedWithLevi");
+    hTempPionsPos->SetName("hTempPionsPos");
+    hTempPionsNeg = (TH1F *)filePionsNeg->Get("IntegratedWithLevi");
+    hTempPionsNeg->SetName("hTempPionsNeg");
+    PionYield = hTempPionsPos->GetBinContent(1) + hTempPionsNeg->GetBinContent(1);
+    PionYieldError = pow(hTempPionsPos->GetBinContent(2), 2) + pow(hTempPionsNeg->GetBinContent(2), 2);
+    if (MultiplicityPerc[i] == 50)
+    {
+      sfilePionPos = Form("Yields_Pos_Pi_%.2f_%.2f_Levi.root", 60.0, 70.0);
+      sfilePionNeg = Form("Yields_Neg_Pi_%.2f_%.2f_Levi.root", 60.0, 70.0);
+      filePionsPos = new TFile(SDirName + "/" + sfilePionPos, "");
+      filePionsNeg = new TFile(SDirName + "/" + sfilePionNeg, "");
+      hTempPionsPos = (TH1F *)filePionsPos->Get("IntegratedWithLevi");
+      hTempPionsPos->SetName("hTempPionsPos");
+      hTempPionsNeg = (TH1F *)filePionsNeg->Get("IntegratedWithLevi");
+      hTempPionsNeg->SetName("hTempPionsNeg");
+      PionYield += hTempPionsPos->GetBinContent(1) + hTempPionsNeg->GetBinContent(1);
+      PionYieldError += pow(hTempPionsPos->GetBinContent(2), 2) + pow(hTempPionsNeg->GetBinContent(2), 2);
+      PionYield = PionYield / 2;
+    }
+    if (MultiplicityPerc[i] == 70)
+    {
+      sfilePionPos = Form("Yields_Pos_Pi_%.2f_%.2f_Levi.root", 80.0, 90.0);
+      sfilePionNeg = Form("Yields_Neg_Pi_%.2f_%.2f_Levi.root", 80.0, 90.0);
+      filePionsPos = new TFile(SDirName + "/" + sfilePionPos, "");
+      filePionsNeg = new TFile(SDirName + "/" + sfilePionNeg, "");
+      hTempPionsPos = (TH1F *)filePionsPos->Get("IntegratedWithLevi");
+      hTempPionsPos->SetName("hTempPionsPos");
+      hTempPionsNeg = (TH1F *)filePionsNeg->Get("IntegratedWithLevi");
+      hTempPionsNeg->SetName("hTempPionsNeg");
+      PionYield += hTempPionsPos->GetBinContent(1) + hTempPionsNeg->GetBinContent(1);
+      PionYieldError += pow(hTempPionsPos->GetBinContent(2), 2) + pow(hTempPionsNeg->GetBinContent(2), 2);
+      sfilePionPos = Form("Yields_Pos_Pi_%.2f_%.2f_Levi.root", 90.0, 100.0);
+      sfilePionNeg = Form("Yields_Neg_Pi_%.2f_%.2f_Levi.root", 90.0, 100.0);
+      filePionsPos = new TFile(SDirName + "/" + sfilePionPos, "");
+      filePionsNeg = new TFile(SDirName + "/" + sfilePionNeg, "");
+      hTempPionsPos = (TH1F *)filePionsPos->Get("IntegratedWithLevi");
+      hTempPionsPos->SetName("hTempPionsPos");
+      hTempPionsNeg = (TH1F *)filePionsNeg->Get("IntegratedWithLevi");
+      hTempPionsNeg->SetName("hTempPionsNeg");
+      PionYield += hTempPionsPos->GetBinContent(1) + hTempPionsNeg->GetBinContent(1);
+      PionYieldError += pow(hTempPionsPos->GetBinContent(2), 2) + pow(hTempPionsNeg->GetBinContent(2), 2);
+      PionYield = PionYield / 3;
+    }
+    PionYieldError = sqrt(PionYieldError);
+    if (MultiplicityPerc[i] == 50)
+    {
+      PionYieldError = PionYieldError / 2;
+    }
+    if (MultiplicityPerc[i] == 70)
+    {
+      PionYieldError = PionYieldError / 3;
+    }
+    hYieldPions->SetBinContent(i + 1, PionYield);
+    hYieldPions->SetBinError(i + 1, PionYieldError);
+  }
+
+  TCanvas *canvasYieldPions = new TCanvas("canvasYieldPions", "canvasYieldPions", 900, 700);
+  StyleCanvas(canvasYieldPions, 0.05, 0.15, 0.2, 0.02);
+
+  StyleHistoYield(hYieldPions, 0, 10, 1, 22, SMultType[MultType] + " Multiplicity Percentile", TitleYYieldPtInt, "", 2, 1.15, YoffsetYield);
+  // StyleHistoYield(hYieldSistTotalPions, LimInfYield, LimSupYield, 1, 22, SMultType[MultType] + " Multiplicity Percentile", TitleYYieldPtInt, "", 2, 1.15, YoffsetYield);
+  hYieldPions->Draw("same");
+
+  // Omega over pion ratio
+  TCanvas *canvasRatioOmToPi = new TCanvas("canvasRatioOmToPi", "canvasRatioOmToPi", 900, 700);
+  StyleCanvas(canvasRatioOmToPi, 0.05, 0.15, 0.2, 0.02);
+  TH1F *hYieldRatio = (TH1F *)fileIn->Get("hYield");
+  hYieldRatio->SetName("hYieldRatio");
+  hYieldRatio->Sumw2();
+  hYieldRatio->Divide(hYieldPions);
+  StyleHistoYield(hYieldRatio, 0, 0.001, 1, 22, SMultType[MultType] + " Multiplicity Percentile", "#Omega / #pion", "", 2, 1.15, 1.2);
+  hYieldRatio->Draw("same");
 
   fileout->Close();
 

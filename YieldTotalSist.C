@@ -113,12 +113,16 @@ void StylePad(TPad *pad, Float_t LMargin, Float_t RMargin, Float_t TMargin, Floa
 
 void YieldTotalSist(Int_t part = 6,
                     Int_t ChosenMult = numMult,
-                    TString SysPath = "" /*"_Sel6June"*/,
+                    TString PathInSyst = "SystematicErrors/SpectraSystematics-Omega-13TeV-FT0M-0-100.root",
+                    TString SysPath = "_Train100720" /*"_Sel6June"*/,
                     TString OutputDir = "SystematicErrors/",
-                    TString year = "LHC22o_pass4_Train89684" /*"LHC22m_pass4_Train79153"*/,
+                    TString year = "LHC22o_pass4_Train99659" /*"LHC22o_pass4_Train89684" /*"LHC22m_pass4_Train79153"*/,
                     Bool_t isSysStudy = 1,
                     Int_t MultType = 1, // 0: no mult for backward compatibility, 1: FT0M, 2: FV0A
-                    Bool_t UseTwoGauss = 0)
+                    Bool_t UseTwoGauss = 1,
+                    Bool_t isBkgParab = 1,
+                    Int_t evFlag = 1 // 0: INEL - 1; 1: INEL > 0; 2: INEL > 1
+)
 {
 
   gStyle->SetOptStat(0);
@@ -140,12 +144,16 @@ void YieldTotalSist(Int_t part = 6,
   TString PathInSistMB;
   TString PathInSistSigExt;
   TString PathInSistPileUp;
+  TString PathInSistOOBPileUp;
+  TString PathInSistMCEff;
   TFile *fileIn[numMult + 1];
   TFile *fileInSist[numMult + 1];
   TFile *fileInSistTopo[numMult + 1];
   TFile *fileInSistMB[numMult + 1];
   TFile *fileInSistSigExt[numMult + 1];
   TFile *fileInSistPileUp[numMult + 1];
+  TFile *fileInSistOOBPileUp[numMult + 1];
+  TFile *fileInSistMCEff[numMult + 1];
 
   // fileout name
   TString stringout;
@@ -154,6 +162,7 @@ void YieldTotalSist(Int_t part = 6,
   stringout += Spart[part];
   if (isSysStudy)
     stringout += SysPath;
+  stringout += "_" + EventType[evFlag];
   stringoutpdf = stringout;
   stringout += ".root";
 
@@ -168,6 +177,8 @@ void YieldTotalSist(Int_t part = 6,
   TH1F *fHistSpectrumRelErrSist_MB[numMult + 1];
   TH1F *fHistSpectrumRelErrSist_SigExt[numMult + 1];
   TH1F *fHistSpectrumRelErrSist_PileUp[numMult + 1];
+  TH1F *fHistSpectrumRelErrSist_OOBPileUp[numMult + 1];
+  TH1F *fHistSpectrumRelErrSist_MCEff[numMult + 1];
   TH1F *fHistSpectrumRelErrSist[numMult + 1];
 
   TH1F *fHistSpectrumStatScaled[numMult + 1];
@@ -210,6 +221,7 @@ void YieldTotalSist(Int_t part = 6,
     PathIn = "Yields/YieldEffCorr" + year + "_";
     PathIn += Spart[part];
     PathIn += IsOneOrTwoGauss[UseTwoGauss];
+    PathIn += SIsBkgParab[isBkgParab];
     if (m == numMult)
     {
       Smolt[m] += "_Mult0-100";
@@ -223,6 +235,7 @@ void YieldTotalSist(Int_t part = 6,
     PathIn += Smolt[m];
     if (isSysStudy)
       PathIn += SysPath;
+    PathIn += "_" + EventType[evFlag];
     PathIn += ".root";
     cout << "Path in : " << PathIn << endl;
 
@@ -236,15 +249,10 @@ void YieldTotalSist(Int_t part = 6,
     }
 
     // 1. Syst ERROR TOPOLOGICAL AND KINEMATIC SELECTIONS
-    PathInSistTopo = "SystematicErrors/SysErrorTopo" + year + "_";
-    PathInSistTopo += Spart[part];
-    PathInSistTopo += Smolt[numMult];
-    if (isSysStudy)
-      PathInSistTopo += SysPath;
-    PathInSistTopo += ".root";
+    PathInSistTopo = PathInSyst;
     cout << "PathInSistTopo: " << PathInSistTopo << endl;
     fileInSistTopo[m] = TFile::Open(PathInSistTopo);
-    fHistSpectrumRelErrSist_Topo[m] = (TH1F *)fileInSistTopo[m]->Get("hTotalSyst");
+    fHistSpectrumRelErrSist_Topo[m] = (TH1F *)fileInSistTopo[m]->Get("hSystMultiTrial");
     fHistSpectrumRelErrSist_Topo[m]->SetName("histoRelSistTopo" + Smolt[m]);
 
     if (!fHistSpectrumRelErrSist_Topo[m])
@@ -254,16 +262,10 @@ void YieldTotalSist(Int_t part = 6,
     }
 
     // 2. SystErrorMB
-    // PathInSistMB = "SystematicErrors/SysErrorMB" + year + "_";
-    PathInSistMB = "SystematicErrors/SysErrorTopo" + year + "_";
-    PathInSistMB += Spart[part];
-    PathInSistMB += Smolt[numMult];
-    if (isSysStudy)
-      PathInSistMB += SysPath;
-    PathInSistMB += ".root";
+    PathInSistMB = PathInSyst;
     cout << "PathInSistMB: " << PathInSistMB << endl;
     fileInSistMB[m] = TFile::Open(PathInSistMB);
-    fHistSpectrumRelErrSist_MB[m] = (TH1F *)fileInSistMB[m]->Get("hTotalSyst");
+    fHistSpectrumRelErrSist_MB[m] = (TH1F *)fileInSistMB[m]->Get("hSystMatBudg");
     fHistSpectrumRelErrSist_MB[m]->SetName("histoRelSistMB" + Smolt[m]);
 
     if (!fHistSpectrumRelErrSist_MB[m])
@@ -271,22 +273,12 @@ void YieldTotalSist(Int_t part = 6,
       cout << " no hist spectrum rel err sist" << endl;
       return;
     }
-    for (Int_t i = 1; i <= fHistSpectrumRelErrSist_MB[m]->GetNbinsX(); i++)
-    {
-      fHistSpectrumRelErrSist_MB[m]->SetBinContent(i, 0);
-    }
 
     // 3. SysError Signal Extraction
-    // PathInSistSigExt = "SystematicErrors/SysErrorSigExt" + year + "_";
-    PathInSistSigExt = "SystematicErrors/SysErrorTopo" + year + "_";
-    PathInSistSigExt += Spart[part];
-    PathInSistSigExt += Smolt[numMult];
-    if (isSysStudy)
-      PathInSistSigExt += SysPath;
-    PathInSistSigExt += ".root";
+    PathInSistSigExt = PathInSyst;
     cout << "PathInSistSigExt: " << PathInSistSigExt << endl;
     fileInSistSigExt[m] = TFile::Open(PathInSistSigExt);
-    fHistSpectrumRelErrSist_SigExt[m] = (TH1F *)fileInSistSigExt[m]->Get("hTotalSyst");
+    fHistSpectrumRelErrSist_SigExt[m] = (TH1F *)fileInSistSigExt[m]->Get("hBkgSyst");
     fHistSpectrumRelErrSist_SigExt[m]->SetName("histoRelSistSigExt" + Smolt[m]);
 
     if (!fHistSpectrumRelErrSist_SigExt[m])
@@ -294,22 +286,26 @@ void YieldTotalSist(Int_t part = 6,
       cout << " no hist spectrum rel err sist" << endl;
       return;
     }
-    for (Int_t i = 1; i <= fHistSpectrumRelErrSist_SigExt[m]->GetNbinsX(); i++)
+
+    // 4. Non-mult dependent efficiency
+    PathInSistMCEff = PathInSyst;
+    cout << "PathInSistMCEff: " << PathInSistMCEff << endl;
+    fileInSistMCEff[m] = TFile::Open(PathInSistMCEff);
+    fHistSpectrumRelErrSist_MCEff[m] = (TH1F *)fileInSistMCEff[m]->Get("hSystEffMultDep");
+    fHistSpectrumRelErrSist_MCEff[m]->SetName("histoRelSistMCEff" + Smolt[m]);
+
+    if (!fHistSpectrumRelErrSist_MCEff[m])
     {
-      fHistSpectrumRelErrSist_SigExt[m]->SetBinContent(i, 0);
+      cout << " no hist spectrum rel err sist" << endl;
+      return;
     }
 
-    // 4. SystError PileUp
+    // 5. SystError IB PileUp
     // PathInSistPileUp = "SystematicErrors/SysErrorPileUp" + year + "_";
-    PathInSistPileUp = "SystematicErrors/SysErrorTopo" + year + "_";
-    PathInSistPileUp += Spart[part];
-    PathInSistPileUp += Smolt[numMult];
-    if (isSysStudy)
-      PathInSistPileUp += SysPath;
-    PathInSistPileUp += ".root";
+    PathInSistPileUp = PathInSyst;
     cout << "PathInSistPileUp: " << PathInSistPileUp << endl;
     fileInSistPileUp[m] = TFile::Open(PathInSistPileUp);
-    fHistSpectrumRelErrSist_PileUp[m] = (TH1F *)fileInSistPileUp[m]->Get("hTotalSyst");
+    fHistSpectrumRelErrSist_PileUp[m] = (TH1F *)fileInSistPileUp[m]->Get("hSystOOB");
     fHistSpectrumRelErrSist_PileUp[m]->SetName("histoRelSistPileUp" + Smolt[m]);
 
     if (!fHistSpectrumRelErrSist_PileUp[m])
@@ -322,11 +318,35 @@ void YieldTotalSist(Int_t part = 6,
       fHistSpectrumRelErrSist_PileUp[m]->SetBinContent(i, 0);
     }
 
+    // 6. SystError OB PileUp
+    // PathInSistOOBPileUp = "SystematicErrors/SysErrorOOBPileUp" + year + "_";
+    PathInSistOOBPileUp = PathInSyst;
+    cout << "PathInSistOOBPileUp: " << PathInSistOOBPileUp << endl;
+    fileInSistOOBPileUp[m] = TFile::Open(PathInSistOOBPileUp);
+    fHistSpectrumRelErrSist_OOBPileUp[m] = (TH1F *)fileInSistOOBPileUp[m]->Get("hSystOOB");
+    fHistSpectrumRelErrSist_OOBPileUp[m]->SetName("histoRelSistOOBPileUp" + Smolt[m]);
+
+    if (!fHistSpectrumRelErrSist_OOBPileUp[m])
+    {
+      cout << " no hist spectrum rel err sist" << endl;
+      return;
+    }
+    for (Int_t i = 1; i <= fHistSpectrumRelErrSist_OOBPileUp[m]->GetNbinsX(); i++)
+    {
+      fHistSpectrumRelErrSist_OOBPileUp[m]->SetBinContent(i, 0);
+    }
+
     //*********** SUM IN QUADRATURE OF ALL SOURCES OF UNCERTAINTY *************//
     fHistSpectrumRelErrSist[m] = (TH1F *)fHistSpectrumRelErrSist_Topo[m]->Clone("histoSpectrumRelErrSist" + Smolt[m]);
     for (Int_t i = 1; i <= fHistSpectrumRelErrSist[m]->GetNbinsX(); i++)
     {
-      fHistSpectrumRelErrSist[m]->SetBinContent(i, TMath::Sqrt(TMath::Power(fHistSpectrumRelErrSist_Topo[m]->GetBinContent(i), 2) + TMath::Power(fHistSpectrumRelErrSist_MB[m]->GetBinContent(i), 2) + TMath::Power(fHistSpectrumRelErrSist_SigExt[m]->GetBinContent(i), 2) + TMath::Power(fHistSpectrumRelErrSist_PileUp[m]->GetBinContent(i), 2)));
+      fHistSpectrumRelErrSist[m]->SetBinContent(i, TMath::Sqrt(
+                                                       TMath::Power(fHistSpectrumRelErrSist_Topo[m]->GetBinContent(i), 2) +
+                                                       TMath::Power(fHistSpectrumRelErrSist_MB[m]->GetBinContent(i), 2) +
+                                                       TMath::Power(fHistSpectrumRelErrSist_SigExt[m]->GetBinContent(i), 2) +
+                                                       TMath::Power(fHistSpectrumRelErrSist_PileUp[m]->GetBinContent(i), 2)+
+                                                       TMath::Power(fHistSpectrumRelErrSist_OOBPileUp[m]->GetBinContent(i), 2)+
+                                                       TMath::Power(fHistSpectrumRelErrSist_MCEff[m]->GetBinContent(i), 2)));
     }
 
     fHistSpectrumSist[m] = (TH1F *)fHistSpectrumStat[m]->Clone("histoSpectrumSist" + Smolt[m]);

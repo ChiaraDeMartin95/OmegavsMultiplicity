@@ -23,6 +23,7 @@
 #include "TGraphAsymmErrors.h"
 #include "Constants.h"
 #include "ErrRatioCorr.C"
+#include "/Users/mbp-cdm-01/Desktop/AssegnoRicerca/Run3Analyses/OmegavsMult/InputVar.h"
 
 void StyleHisto(TH1F *histo, Float_t Low, Float_t Up, Int_t color, Int_t style, TString TitleX, TString TitleY, TString title)
 {
@@ -113,15 +114,15 @@ void StylePad(TPad *pad, Float_t LMargin, Float_t RMargin, Float_t TMargin, Floa
 
 void YieldTotalSist(Int_t part = 6,
                     Int_t ChosenMult = numMult,
-                    TString PathInSyst = "SystematicErrors/SpectraSystematics-Omega-13TeV-FT0M-0-100.root",
-                    TString SysPath = "_Train100720" /*"_Sel6June"*/,
+                    TString PathInSyst = ExtrPathInSyst, 
+                    TString SysPath = ExtrSysPath, 
                     TString OutputDir = "SystematicErrors/",
-                    TString year = "LHC22o_pass4_Train99659" /*"LHC22o_pass4_Train89684" /*"LHC22m_pass4_Train79153"*/,
+                    TString year = Extryear, 
                     Bool_t isSysStudy = 1,
-                    Int_t MultType = 1, // 0: no mult for backward compatibility, 1: FT0M, 2: FV0A
-                    Bool_t UseTwoGauss = 1,
-                    Bool_t isBkgParab = 1,
-                    Int_t evFlag = 1 // 0: INEL - 1; 1: INEL > 0; 2: INEL > 1
+                    Int_t MultType = ExtrMultType, // 0: no mult for backward compatibility, 1: FT0M, 2: FV0A
+                    Bool_t UseTwoGauss = ExtrUseTwoGauss,
+                    Bool_t isBkgParab = ExtrisBkgParab,
+                    Int_t evFlag = ExtrevFlag // 0: INEL - 1; 1: INEL > 0; 2: INEL > 1
 )
 {
 
@@ -172,6 +173,7 @@ void YieldTotalSist(Int_t part = 6,
 
   TH1F *fHistSpectrumStat[numMult + 1];
   TH1F *fHistSpectrumSist[numMult + 1];
+  TH1F *fHistSpectrumSistPtCorr[numMult + 1];
 
   TH1F *fHistSpectrumRelErrSist_Topo[numMult + 1];
   TH1F *fHistSpectrumRelErrSist_MB[numMult + 1];
@@ -180,6 +182,7 @@ void YieldTotalSist(Int_t part = 6,
   TH1F *fHistSpectrumRelErrSist_OOBPileUp[numMult + 1];
   TH1F *fHistSpectrumRelErrSist_MCEff[numMult + 1];
   TH1F *fHistSpectrumRelErrSist[numMult + 1];
+  TH1F *fHistSpectrumRelErrSistPtCorr[numMult + 1];
 
   TH1F *fHistSpectrumStatScaled[numMult + 1];
   TH1F *fHistSpectrumSistScaled[numMult + 1];
@@ -338,21 +341,30 @@ void YieldTotalSist(Int_t part = 6,
 
     //*********** SUM IN QUADRATURE OF ALL SOURCES OF UNCERTAINTY *************//
     fHistSpectrumRelErrSist[m] = (TH1F *)fHistSpectrumRelErrSist_Topo[m]->Clone("histoSpectrumRelErrSist" + Smolt[m]);
+    fHistSpectrumRelErrSistPtCorr[m] = (TH1F *)fHistSpectrumRelErrSist_Topo[m]->Clone("histoSpectrumRelErrSistPtCorr" + Smolt[m]);
     for (Int_t i = 1; i <= fHistSpectrumRelErrSist[m]->GetNbinsX(); i++)
     {
       fHistSpectrumRelErrSist[m]->SetBinContent(i, TMath::Sqrt(
                                                        TMath::Power(fHistSpectrumRelErrSist_Topo[m]->GetBinContent(i), 2) +
                                                        TMath::Power(fHistSpectrumRelErrSist_MB[m]->GetBinContent(i), 2) +
                                                        TMath::Power(fHistSpectrumRelErrSist_SigExt[m]->GetBinContent(i), 2) +
-                                                       TMath::Power(fHistSpectrumRelErrSist_PileUp[m]->GetBinContent(i), 2)+
-                                                       TMath::Power(fHistSpectrumRelErrSist_OOBPileUp[m]->GetBinContent(i), 2)+
+                                                       TMath::Power(fHistSpectrumRelErrSist_PileUp[m]->GetBinContent(i), 2) +
+                                                       TMath::Power(fHistSpectrumRelErrSist_OOBPileUp[m]->GetBinContent(i), 2) +
+                                                       TMath::Power(fHistSpectrumRelErrSist_MCEff[m]->GetBinContent(i), 2)));
+      fHistSpectrumRelErrSistPtCorr[m]->SetBinContent(i, TMath::Sqrt(
+                                                       TMath::Power(fHistSpectrumRelErrSist_MB[m]->GetBinContent(i), 2) +
+                                                       TMath::Power(fHistSpectrumRelErrSist_SigExt[m]->GetBinContent(i), 2) +
+                                                       TMath::Power(fHistSpectrumRelErrSist_PileUp[m]->GetBinContent(i), 2) +
+                                                       TMath::Power(fHistSpectrumRelErrSist_OOBPileUp[m]->GetBinContent(i), 2) +
                                                        TMath::Power(fHistSpectrumRelErrSist_MCEff[m]->GetBinContent(i), 2)));
     }
 
     fHistSpectrumSist[m] = (TH1F *)fHistSpectrumStat[m]->Clone("histoSpectrumSist" + Smolt[m]);
+    fHistSpectrumSistPtCorr[m] = (TH1F *)fHistSpectrumStat[m]->Clone("histoSpectrumSistPtCorr" + Smolt[m]);
     for (Int_t i = 1; i <= fHistSpectrumSist[m]->GetNbinsX(); i++)
     {
       fHistSpectrumSist[m]->SetBinError(i, fHistSpectrumStat[m]->GetBinContent(i) * fHistSpectrumRelErrSist[m]->GetBinContent(i));
+      fHistSpectrumSistPtCorr[m]->SetBinError(i, fHistSpectrumStat[m]->GetBinContent(i) * fHistSpectrumRelErrSistPtCorr[m]->GetBinContent(i));
     }
   } // end loop on mult
 
@@ -396,6 +408,12 @@ void YieldTotalSist(Int_t part = 6,
     fHistSpectrumRelErrSist[m]->SetMarkerStyle(MarkerMult[m]);
     fHistSpectrumRelErrSist[m]->SetMarkerSize(SizeMult[m]);
     fHistSpectrumRelErrSist[m]->Draw("same");
+    fHistSpectrumRelErrSistPtCorr[m]->SetMarkerColor(ColorMult[m]);
+    fHistSpectrumRelErrSistPtCorr[m]->SetLineColor(ColorMult[m]);
+    fHistSpectrumRelErrSistPtCorr[m]->SetMarkerStyle(22);
+    fHistSpectrumRelErrSistPtCorr[m]->SetMarkerSize(SizeMult[m]);
+    fHistSpectrumRelErrSistPtCorr[m]->Draw("same");
+    
     legendAllMult->AddEntry(fHistSpectrumRelErrSist[m], SmoltBis[m] + "%", "pef");
   } // end loop on mult
   LegendTitle->Draw("");
@@ -407,6 +425,8 @@ void YieldTotalSist(Int_t part = 6,
   {
     fHistSpectrumRelErrSist[m]->Write();
     fHistSpectrumSist[m]->Write();
+    fHistSpectrumRelErrSistPtCorr[m]->Write();
+    fHistSpectrumSistPtCorr[m]->Write();
   }
 
   fileout->Close();

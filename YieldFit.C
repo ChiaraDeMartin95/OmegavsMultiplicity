@@ -25,6 +25,7 @@
 #include "ErrRatioCorr.C"
 #include </data/dataalice/AliceSoftware/aliphysics/master_chiara/src/PWG/Tools/AliPWGFunc.h>
 #include </data/dataalice/cdemart/AliPhysicsChiara/AliPhysics/PWGLF/SPECTRA/UTILS/YieldMean.C>
+#include "/Users/mbp-cdm-01/Desktop/AssegnoRicerca/Run3Analyses/OmegavsMult/InputVar.h"
 
 void StyleHisto(TH1F *histo, Float_t Low, Float_t Up, Int_t color, Int_t style, TString TitleX, TString TitleY, TString title)
 {
@@ -113,15 +114,17 @@ void StylePad(TPad *pad, Float_t LMargin, Float_t RMargin, Float_t TMargin, Floa
 // take spectra in input
 // fits them to get pt-integrated yields
 
-void YieldFit(Int_t typefit = 3, //mT scaling, Boltzmann, Fermi-Direc, Levi
-	       Int_t part = 8,
-               TString SysPath = "_Sel23June"/*"_Sel6June"*/,
-	      Bool_t isBkgParab =1,
-               TString OutputDir = "PtIntegratedYields/",
-	      TString year = "LHC22o_pass4_Train89684"/*"LHC22m_pass4_Train79153"*/,
-               Bool_t isSysStudy = 1,
-               Int_t MultType = 1, // 0: no mult for backward compatibility, 1: FT0M, 2: FV0A
-               Bool_t UseTwoGauss = 1) 
+void YieldFit(Int_t typefit = 3, // mT scaling, Boltzmann, Fermi-Direc, Levi
+              Int_t part = 8,
+              TString SysPath = ExtrSysPath,
+              Bool_t isBkgParab = ExtrisBkgParab,
+              TString OutputDir = "PtIntegratedYields/",
+              TString year = Extryear, 
+              Bool_t isSysStudy = 1,
+              Int_t MultType = 1, // 0: no mult for backward compatibility, 1: FT0M, 2: FV0A
+              Bool_t UseTwoGauss = ExtrUseTwoGauss,
+              Int_t evFlag = ExtrevFlag // 0: INEL - 1; 1: INEL > 0; 2: INEL > 1)
+)
 {
 
   // multiplicity related variables
@@ -134,12 +137,14 @@ void YieldFit(Int_t typefit = 3, //mT scaling, Boltzmann, Fermi-Direc, Levi
   TString PathIn;
   TFile *fileIn[numMult + 1];
 
-  //fileinSist
+  // fileinSist
   TString PathInSist;
   PathInSist = "SystematicErrors/TotalSysError_" + year + "_";
   PathInSist += Spart[part];
   // PathInSist += Smolt[numMult];
-  //if (isSysStudy) PathInSist += SysPath;
+  if (isSysStudy)
+    PathInSist += SysPath;
+  PathInSist += "_" + EventType[evFlag];
   PathInSist += ".root";
   TFile *fileInSist[numMult + 1];
 
@@ -150,13 +155,6 @@ void YieldFit(Int_t typefit = 3, //mT scaling, Boltzmann, Fermi-Direc, Levi
   stringout += Spart[part];
   stringout += IsOneOrTwoGauss[UseTwoGauss];
   stringout += SIsBkgParab[isBkgParab];
-
-  if (isSysStudy)
-    stringout += SysPath;
-  stringout += "_"+nameFitFile[typefit];
-  stringoutpdf = stringout;
-  stringout += ".root";
-  TFile *fileout = new TFile(stringout, "RECREATE");
 
   // canvases
   TCanvas *canvasPtSpectra = new TCanvas("canvasPtSpectra", "canvasPtSpectra", 700, 900);
@@ -169,7 +167,9 @@ void YieldFit(Int_t typefit = 3, //mT scaling, Boltzmann, Fermi-Direc, Levi
   StylePad(padL1, 0.18, 0.01, 0.02, 0.3); // L, R, T, B
 
   TH1F *fHistSpectrumStat[numMult + 1];
+  TH1F *fHistSpectrumStatWorkAround[numMult + 1]; // error = stat/sqrt(2)
   TH1F *fHistSpectrumSist[numMult + 1];
+  TH1F *fHistSpectrumSistPtCorr[numMult + 1];
   TH1F *fHistSpectrumStatScaled[numMult + 1];
   TH1F *fHistSpectrumSistScaled[numMult + 1];
   TH1F *fHistSpectrumSistScaledForLegend[numMult + 1];
@@ -225,6 +225,7 @@ void YieldFit(Int_t typefit = 3, //mT scaling, Boltzmann, Fermi-Direc, Levi
     PathIn += Smolt[m];
     if (isSysStudy)
       PathIn += SysPath;
+    PathIn += "_" + EventType[evFlag];
     PathIn += ".root";
     cout << "Path in : " << PathIn << endl;
 
@@ -236,14 +237,27 @@ void YieldFit(Int_t typefit = 3, //mT scaling, Boltzmann, Fermi-Direc, Levi
       cout << " no hist spectrum stat" << endl;
       return;
     }
+    fHistSpectrumStatWorkAround[m] = (TH1F *)fHistSpectrumStat[m]->Clone("histoSpectrumStatWA_" + Smolt[m]);
+    for (Int_t b = 1; b <= fHistSpectrumStat[m]->GetNbinsX(); b++)
+    {
+      fHistSpectrumStatWorkAround[m]->SetBinError(b, fHistSpectrumStat[m]->GetBinError(b) / sqrt(2));
+    }
+
     fileInSist[m] = TFile::Open(PathInSist);
     fHistSpectrumSist[m] = (TH1F *)fileInSist[m]->Get("histoSpectrumSist" + Smolt[m]);
+    fHistSpectrumSistPtCorr[m] = (TH1F *)fileInSist[m]->Get("histoSpectrumSistPtCorr" + Smolt[m]);
 
     if (!fHistSpectrumSist[m])
     {
       cout << " no hist spectrum sist" << endl;
       return;
     }
+    if (!fHistSpectrumSistPtCorr[m])
+    {
+      cout << " no hist spectrum sist" << endl;
+      return;
+    }
+
   } // end loop on mult
 
   AliPWGFunc pwgfunc;
@@ -259,35 +273,39 @@ void YieldFit(Int_t typefit = 3, //mT scaling, Boltzmann, Fermi-Direc, Levi
   legendfitSummary->AddEntry("", nameFit[typefit] + " fit", "");
 
   // fit spectra
-  Int_t ColorFit[numfittipo + 1] = {860, 881, 868, 628, 419};
+  Int_t ColorFit[numfittipo + 1] = {860, 881, 868, 628, 419, kAzure + 7};
   TFitResultPtr fFitResultPtr0[numMult + 1];
   TF1 *fit_pwgfunc[numMult + 1];
+  TF1 *fit_pwgfunc_onlyStat[numMult + 1];
   TF1 *fit_pwgfunc_Scaled[numMult + 1];
   TF1 *fit_pwgfunc_ScaledBis[numMult + 1];
   TF1 *fit_pwgfuncBis[numMult + 1];
   TH1 *hhout[numMult + 1];
-  Float_t   Yield[numMult + 1] = {0};
-  Float_t   YieldExtr[numMult + 1] = {0};
-  Float_t   YieldErrStat[numMult + 1] = {0};
-  Float_t   YieldErrSistHi[numMult + 1] =  {0};
-  Float_t   YieldErrSistLow[numMult + 1] = {0};
-  Float_t   Mean[numMult + 1] =  {0};
-  Float_t   MeanErrStat[numMult + 1] = {0};
-  Float_t   MeanErrSistHi[numMult + 1]= {0};
-  Float_t   MeanErrSistLow[numMult + 1]= {0};
-  Float_t   Chi2NDF[numMult + 1] = {0};
-  Float_t   Temp[numMult + 1] = {0};
-  Float_t   TempError[numMult + 1] = {0};
+  Float_t Yield[numMult + 1] = {0};
+  Float_t YieldExtr[numMult + 1] = {0};
+  Float_t YieldErrStat[numMult + 1] = {0};
+  Float_t YieldErrSistHi[numMult + 1] = {0};
+  Float_t YieldErrSistLow[numMult + 1] = {0};
+  Float_t Mean[numMult + 1] = {0};
+  Float_t MeanErrStat[numMult + 1] = {0};
+  Float_t MeanErrSistHi[numMult + 1] = {0};
+  Float_t MeanErrSistLow[numMult + 1] = {0};
+  Float_t Chi2NDF[numMult + 1] = {0};
+  Float_t Temp[numMult + 1] = {0};
+  Float_t TempError[numMult + 1] = {0};
 
-  Double_t LowRange[numMult+1]= {0, 0, 0, 0, 0, 0};
-  Double_t UpRange[numMult+1]= {4,4,4,4,4,4};
-  if (typefit==3){
-    for (Int_t b=0; b<= numMult; b++){
+  Double_t LowRange[numMult + 1] = {0, 0, 0, 0, 0, 0};
+  Double_t UpRange[numMult + 1] = {4, 4, 4, 4, 4, 4};
+  if (typefit == 3)
+  {
+    for (Int_t b = 0; b <= numMult; b++)
+    {
       UpRange[b] = 8;
     }
   }
-  for (Int_t b=0; b<= numMult; b++){
-    UpRange[b] = 3;
+  for (Int_t b = 0; b <= numMult; b++)
+  {
+    UpRange[b] = 2.2;
   }
 
   TString Titlehhout[9] = {"kYield",
@@ -317,23 +335,31 @@ void YieldFit(Int_t typefit = 3, //mT scaling, Boltzmann, Fermi-Direc, Levi
       fit_pwgfunc[m] = pwgfunc.GetFermiDirac(massParticle[part], 0.1, 0.04 * factor, namepwgfunc[m]);
     if (typefit == 3)
     {
-      fit_pwgfunc[m] = pwgfunc.GetLevi(massParticle[part], 0.1, 0.03, 0.04 * factor, namepwgfunc[m]);                          //norm, n, T, mass (but the function must be called with these parameters in inverse order)
-      fit_pwgfunc[m]->SetParLimits(0, 0, fHistSpectrumStat[m]->GetBinContent(fHistSpectrumStat[m]->GetMaximumBin()) * 0.5 * 10); //norm
+      fit_pwgfunc[m] = pwgfunc.GetLevi(massParticle[part], 0.1, 0.03, 0.04 * factor, namepwgfunc[m]);                            // norm, n, T, mass (but the function must be called with these parameters in inverse order)
+      fit_pwgfunc[m]->SetParLimits(0, 0, fHistSpectrumStat[m]->GetBinContent(fHistSpectrumStat[m]->GetMaximumBin()) * 0.5 * 10); // norm
       fit_pwgfunc[m]->SetParLimits(1, 2, 30);                                                                                    // n
       fit_pwgfunc[m]->SetParLimits(2, 0.1, 10);                                                                                  // T
       fit_pwgfunc[m]->SetParameter(2, 0.7);
+    }
+    if (typefit == 4)
+    {
+      fit_pwgfunc[m] = pwgfunc.GetBoseEinstein(massParticle[part], 0.1, 0.04 * factor, namepwgfunc[m]); // mass, T, norm, name
+    }
+    if (typefit == 5)
+    {
+      fit_pwgfunc[m] = pwgfunc.GetBGBW(massParticle[part], 0.5, 0.1, 0.03, 0.04 * factor, namepwgfunc[m]); // mass, beta, T, n, norm, name
     }
 
     fit_pwgfunc[m]->SetLineColor(ColorMult[m]);
     fit_pwgfunc[m]->SetLineStyle(7);
     fit_pwgfunc[m]->SetLineWidth(2);
     fit_pwgfunc[m]->SetRange(LowRange[m], UpRange[m]);
-    fit_pwgfuncBis[m]= (TF1*) fit_pwgfunc[m]->Clone(namepwgfunc[m]+ "_Bis");
-    fFitResultPtr0[m] = fHistSpectrumStat[m]->Fit(fit_pwgfuncBis[m],"SR0I");
+    fit_pwgfuncBis[m] = (TF1 *)fit_pwgfunc[m]->Clone(namepwgfunc[m] + "_Bis");
+    fit_pwgfunc_onlyStat[m] = (TF1 *)fit_pwgfunc[m]->Clone(namepwgfunc[m] + "_onlyStat");
+    fFitResultPtr0[m] = fHistSpectrumStat[m]->Fit(fit_pwgfuncBis[m], "SR0I");
 
     cout << "Calling YieldMean macro" << endl;
-    //    hhout[m] = YieldMean(fHistSpectrumStat[m], fHistSpectrumSist[m], fit_pwgfunc[m], 0, 20, 0.01, 0.1, "0qI", "log.root", LowRange[m], UpRange[m]);
-    hhout[m] = YieldMean(fHistSpectrumStat[m], fHistSpectrumStat[m], fit_pwgfunc[m], 0, 20, 0.01, 0.1, "0qI", "log.root", LowRange[m], UpRange[m]);
+    hhout[m] = YieldMean(fHistSpectrumStat[m], fHistSpectrumSistPtCorr[m], fit_pwgfunc[m], 0, 20, 0.01, 0.1, "0qI", "log.root", LowRange[m], UpRange[m]); // from here I get errors of yields (stat and syst)
     cout << "End of call " << endl;
 
     hhout[m]->SetLineColor(ColorFit[typefit]);
@@ -359,19 +385,22 @@ void YieldFit(Int_t typefit = 3, //mT scaling, Boltzmann, Fermi-Direc, Levi
     cout << "Yield: " << Yield[m] << " +- " << YieldErrStat[m] << " (stat.) +" << YieldErrSistHi[m] << " - " << YieldErrSistLow[m] << " (syst.) " << endl;
     cout << "Mean: " << Mean[m] << " +- " << MeanErrStat[m] << endl;
 
-    Chi2NDF[m] = fit_pwgfunc[m]->GetChisquare()/fit_pwgfunc[m]->GetNDF();
-    if (typefit == 3){
-      Temp[m] = fit_pwgfunc[m]->GetParameter(2);   
+    Chi2NDF[m] = fit_pwgfunc[m]->GetChisquare() / fit_pwgfunc[m]->GetNDF();
+    if (typefit == 3)
+    {
+      Temp[m] = fit_pwgfunc[m]->GetParameter(2);
       TempError[m] = fit_pwgfunc[m]->GetParError(2);
-    } else {
-      Temp[m] = fit_pwgfunc[m]->GetParameter(1);   
+    }
+    else
+    {
+      Temp[m] = fit_pwgfunc[m]->GetParameter(1);
       TempError[m] = fit_pwgfunc[m]->GetParError(1);
     }
 
   } // end loop on multiplicity classes
 
   // draw spectra in multiplicity classes
-  TString sScaleFactorFinal[numMult+1] = {};
+  TString sScaleFactorFinal[numMult + 1] = {};
   Float_t ScaleFactorFinal[numMult + 1];
 
   Float_t LimSupSpectra = 9999.99;
@@ -400,9 +429,11 @@ void YieldFit(Int_t typefit = 3, //mT scaling, Boltzmann, Fermi-Direc, Levi
   gPad->SetLogy();
   hDummy->Draw("");
 
-  for (Int_t m = numMult; m >= 0; m--) {
+  for (Int_t m = numMult; m >= 0; m--)
+  {
     ScaleFactorFinal[m] = ScaleFactor[m];
-    if (m == numMult)      {
+    if (m == numMult)
+    {
       ColorMult[m] = ColorMB;
       MarkerMult[m] = MarkerMB;
       SizeMult[m] = SizeMB;
@@ -412,8 +443,8 @@ void YieldFit(Int_t typefit = 3, //mT scaling, Boltzmann, Fermi-Direc, Levi
     fHistSpectrumStatScaled[m] = (TH1F *)fHistSpectrumStat[m]->Clone("fHistSpectrumStatScaled_" + Smolt[m]);
     fHistSpectrumStatScaled[m]->Scale(ScaleFactorFinal[m]);
     fHistSpectrumSistScaled[m]->Scale(ScaleFactorFinal[m]);
-    fit_pwgfunc_Scaled[m] = (TF1*)fit_pwgfunc[m]->Clone(namepwgfunc[m] + "_Scaled");
-    fit_pwgfunc_ScaledBis[m] = (TF1*)fit_pwgfuncBis[m]->Clone(namepwgfunc[m] + "_ScaledBis");
+    fit_pwgfunc_Scaled[m] = (TF1 *)fit_pwgfunc[m]->Clone(namepwgfunc[m] + "_Scaled");
+    fit_pwgfunc_ScaledBis[m] = (TF1 *)fit_pwgfuncBis[m]->Clone(namepwgfunc[m] + "_ScaledBis");
     fit_pwgfunc_Scaled[m]->SetLineColor(ColorMult[m]);
     fit_pwgfunc_Scaled[m]->SetParameter(0, fit_pwgfunc[m]->GetParameter(0) * ScaleFactorFinal[m]);
     fit_pwgfunc_ScaledBis[m]->SetParameter(0, fit_pwgfuncBis[m]->GetParameter(0) * ScaleFactorFinal[m]);
@@ -435,7 +466,7 @@ void YieldFit(Int_t typefit = 3, //mT scaling, Boltzmann, Fermi-Direc, Levi
     fHistSpectrumSistScaled[m]->SetFillStyle(0);
     fHistSpectrumSistScaled[m]->Draw("same e2");
     fit_pwgfunc_Scaled[m]->Draw("same");
-    //fit_pwgfunc_ScaledBis[m]->Draw("same");
+    // fit_pwgfunc_ScaledBis[m]->Draw("same");
     if (m == numMult)
       legendfit->AddEntry(fit_pwgfunc_Scaled[m], nameFit[typefit], "l");
     fHistSpectrumSistScaledForLegend[m] = (TH1F *)fHistSpectrumSistScaled[m]->Clone("fHistSpectrumSistScaledForLegend_" + Smolt[m]);
@@ -463,8 +494,8 @@ void YieldFit(Int_t typefit = 3, //mT scaling, Boltzmann, Fermi-Direc, Levi
   Float_t tickXR = 0.045;
   Float_t tickYR = 0.045;
 
-  TF1 * rettaUno= new TF1("rettaUno", "pol0",0,8);
-  rettaUno->FixParameter(0,1);
+  TF1 *rettaUno = new TF1("rettaUno", "pol0", 0, 8);
+  rettaUno->FixParameter(0, 1);
 
   TString TitleYSpectraRatio = "Data/fit";
   canvasPtSpectra->cd();
@@ -480,10 +511,11 @@ void YieldFit(Int_t typefit = 3, //mT scaling, Boltzmann, Fermi-Direc, Levi
   for (Int_t m = numMult; m >= 0; m--)
   {
     fHistSpectrumRatioFit[m] = (TH1F *)fHistSpectrumStat[m]->Clone(Form("HistRatioFit_m%i_typefit%i", m, typefit));
-    for (Int_t b=1; b<= fHistSpectrumStat[m]->GetNbinsX(); b++){
-      fHistSpectrumRatioFit[m]->SetBinContent(b, fHistSpectrumStat[m]->GetBinContent(b)*fHistSpectrumStat[m]->GetBinWidth(b)/fit_pwgfunc[m]->Integral(fHistSpectrumStat[m]->GetXaxis()->GetBinLowEdge(b), fHistSpectrumStat[m]->GetXaxis()->GetBinUpEdge(b)));
-      fHistSpectrumRatioFit[m]->SetBinError(b, fHistSpectrumStat[m]->GetBinError(b)*fHistSpectrumStat[m]->GetBinWidth(b)/fit_pwgfunc[m]->Integral(fHistSpectrumStat[m]->GetXaxis()->GetBinLowEdge(b), fHistSpectrumStat[m]->GetXaxis()->GetBinUpEdge(b)));
-  }
+    for (Int_t b = 1; b <= fHistSpectrumStat[m]->GetNbinsX(); b++)
+    {
+      fHistSpectrumRatioFit[m]->SetBinContent(b, fHistSpectrumStat[m]->GetBinContent(b) * fHistSpectrumStat[m]->GetBinWidth(b) / fit_pwgfunc[m]->Integral(fHistSpectrumStat[m]->GetXaxis()->GetBinLowEdge(b), fHistSpectrumStat[m]->GetXaxis()->GetBinUpEdge(b)));
+      fHistSpectrumRatioFit[m]->SetBinError(b, fHistSpectrumStat[m]->GetBinError(b) * fHistSpectrumStat[m]->GetBinWidth(b) / fit_pwgfunc[m]->Integral(fHistSpectrumStat[m]->GetXaxis()->GetBinLowEdge(b), fHistSpectrumStat[m]->GetXaxis()->GetBinUpEdge(b)));
+    }
     //    fHistSpectrumRatioFit[m]->Divide(fit_pwgfunc[m]);
     rettaUno->SetLineColor(kBlack);
     fHistSpectrumRatioFit[m]->Draw("samee");
@@ -498,7 +530,6 @@ void YieldFit(Int_t typefit = 3, //mT scaling, Boltzmann, Fermi-Direc, Levi
 
   } // end loop on mult
 
-
   Float_t LimInfYield = 0;
   Float_t LimSupYield = 0.01;
   Float_t YoffsetYield = 2;
@@ -512,66 +543,73 @@ void YieldFit(Int_t typefit = 3, //mT scaling, Boltzmann, Fermi-Direc, Levi
   TCanvas *canvasFracExtrYield = new TCanvas("canvasFracExtrYield", "canvasFracExtrYield", 900, 700);
   StyleCanvas(canvasFracExtrYield, 0.05, 0.15, 0.2, 0.02);
 
-  TH1F *hYield = new TH1F("hYield", "hYield", numMult+1, 0, numMult+1);
-  TH1F *hYieldSist = new TH1F("hYieldSist", "hYieldSist", numMult+1, 0, numMult+1);
-  TH1F *hChi2 = new TH1F("hChi2", "hChi2", numMult+1, 0, numMult+1);
-  TH1F *hFracExtrYield = new TH1F("hFracExtrYield", "hFracExtrYield", numMult+1, 0, numMult+1);
-  TH1F *hTemp = new TH1F("hTemp", "hTemp", numMult+1, 0, numMult+1);
-  for (Int_t m = numMult; m >= 0; m--){
-    hYield->GetXaxis()->SetBinLabel(m+1, SmoltBis[m] + "%");
-    hYield->SetBinContent(m+1, Yield[m]);
-    hYield->SetBinError(m+1, YieldErrStat[m]);
-    hYieldSist->GetXaxis()->SetBinLabel(m+1, SmoltBis[m] + "%");
-    hYieldSist->SetBinContent(m+1, Yield[m]);
-    hYieldSist->SetBinError(m+1, 1./2 * (YieldErrSistHi[m] + YieldErrSistLow[m]));
-    hChi2->GetXaxis()->SetBinLabel(m+1, SmoltBis[m] + "%");
-    hChi2->SetBinContent(m+1, Chi2NDF[m]);
-    hChi2->SetBinError(m+1, 0);
-    hTemp->GetXaxis()->SetBinLabel(m+1, SmoltBis[m] + "%");
-    hTemp->SetBinContent(m+1, Temp[m]);
-    hTemp->SetBinError(m+1, TempError[m]);
-    hFracExtrYield->GetXaxis()->SetBinLabel(m+1, SmoltBis[m] + "%");
-    hFracExtrYield->SetBinContent(m+1, YieldExtr[m]/Yield[m]);
-    hFracExtrYield->SetBinError(m+1, 0);
+  TH1F *hYield = new TH1F("hYield", "hYield", numMult + 1, 0, numMult + 1);
+  TH1F *hYieldSist = new TH1F("hYieldSist", "hYieldSist", numMult + 1, 0, numMult + 1);
+  TH1F *hChi2 = new TH1F("hChi2", "hChi2", numMult + 1, 0, numMult + 1);
+  TH1F *hFracExtrYield = new TH1F("hFracExtrYield", "hFracExtrYield", numMult + 1, 0, numMult + 1);
+  TH1F *hTemp = new TH1F("hTemp", "hTemp", numMult + 1, 0, numMult + 1);
+  for (Int_t m = numMult; m >= 0; m--)
+  {
+    hYield->GetXaxis()->SetBinLabel(m + 1, SmoltBis[m] + "%");
+    hYield->SetBinContent(m + 1, Yield[m]);
+    hYield->SetBinError(m + 1, YieldErrStat[m]);
+    hYieldSist->GetXaxis()->SetBinLabel(m + 1, SmoltBis[m] + "%");
+    hYieldSist->SetBinContent(m + 1, Yield[m]);
+    hYieldSist->SetBinError(m + 1, 1. / 2 * (YieldErrSistHi[m] + YieldErrSistLow[m]));
+    hChi2->GetXaxis()->SetBinLabel(m + 1, SmoltBis[m] + "%");
+    hChi2->SetBinContent(m + 1, Chi2NDF[m]);
+    hChi2->SetBinError(m + 1, 0);
+    hTemp->GetXaxis()->SetBinLabel(m + 1, SmoltBis[m] + "%");
+    hTemp->SetBinContent(m + 1, Temp[m]);
+    hTemp->SetBinError(m + 1, TempError[m]);
+    hFracExtrYield->GetXaxis()->SetBinLabel(m + 1, SmoltBis[m] + "%");
+    hFracExtrYield->SetBinContent(m + 1, YieldExtr[m] / Yield[m]);
+    hFracExtrYield->SetBinError(m + 1, 0);
     cout << "\n\n************************************" << endl;
     cout << "Multiplicity class: " << SmoltBis[m] << endl;
     cout << "Yield: " << Yield[m] << " +- " << YieldErrStat[m] << endl;
     cout << "Mean: " << Mean[m] << " +- " << MeanErrStat[m] << endl;
 
   } // end loop on mult
-  
-  //taken from HEP data; INEL > 0, Table 11a
-  TH1F *hYieldPubStat = new TH1F("hYieldPubStat", "hYieldPubStat", numMult+1, 0, numMult+1);
-  TH1F *hYieldPubSist = new TH1F("hYieldPubSist", "hYieldPubSist", numMult+1, 0, numMult+1);
-  if (part==6 || part==7) {
-    hYieldPubStat->SetBinContent(numMult+1, 0.0024070792/2); 
-    hYieldPubSist->SetBinContent(numMult+1, 0.0024070792/2);
+
+  // taken from HEP data; INEL > 0, Table 11a
+  TH1F *hYieldPubStat = new TH1F("hYieldPubStat", "hYieldPubStat", numMult + 1, 0, numMult + 1);
+  TH1F *hYieldPubSist = new TH1F("hYieldPubSist", "hYieldPubSist", numMult + 1, 0, numMult + 1);
+  if (part == 6 || part == 7)
+  {
+    hYieldPubStat->SetBinContent(numMult + 1, 0.0024070792 / 2);
+    hYieldPubSist->SetBinContent(numMult + 1, 0.0024070792 / 2);
   }
-  else if (part==8) {
-    hYieldPubStat->SetBinContent(numMult+1, 0.0024070792); 
-    hYieldPubSist->SetBinContent(numMult+1, 0.0024070792);
+  else if (part == 8)
+  {
+    hYieldPubStat->SetBinContent(numMult + 1, 0.0024070792);
+    hYieldPubSist->SetBinContent(numMult + 1, 0.0024070792);
   }
-  if (part==6 || part==7){
-    hYieldPubStat->SetBinError(numMult+1, 0.0000630865/2);
-    hYieldPubSist->SetBinError(numMult+1, 0.0002274319/2);
+  if (part == 6 || part == 7)
+  {
+    hYieldPubStat->SetBinError(numMult + 1, 0.0000630865 / 2);
+    hYieldPubSist->SetBinError(numMult + 1, 0.0002274319 / 2);
   }
-  else if (part==8){
-    hYieldPubStat->SetBinError(numMult+1, 0.0000630865);
-    hYieldPubSist->SetBinError(numMult+1, 0.0002274319);
+  else if (part == 8)
+  {
+    hYieldPubStat->SetBinError(numMult + 1, 0.0000630865);
+    hYieldPubSist->SetBinError(numMult + 1, 0.0002274319);
   }
 
-  for (Int_t m = numMult; m >= 0; m--){
-    if (m==numMult) continue;
-    hYieldPubStat->SetBinContent(m+1, -999);
-    hYieldPubStat->SetBinError(m+1, -999);
-    hYieldPubSist->SetBinContent(m+1, -999);
-    hYieldPubSist->SetBinError(m+1, -999);
+  for (Int_t m = numMult; m >= 0; m--)
+  {
+    if (m == numMult)
+      continue;
+    hYieldPubStat->SetBinContent(m + 1, -999);
+    hYieldPubStat->SetBinError(m + 1, -999);
+    hYieldPubSist->SetBinContent(m + 1, -999);
+    hYieldPubSist->SetBinError(m + 1, -999);
   }
-  
+
   StyleHistoYield(hYield, LimInfYield, LimSupYield, 1, 22, SMultType[MultType] + " Multiplicity Percentile", TitleYYieldPtInt, "", 2, 1.15, YoffsetYield);
   StyleHistoYield(hYieldSist, LimInfYield, LimSupYield, 1, 22, SMultType[MultType] + " Multiplicity Percentile", TitleYYieldPtInt, "", 2, 1.15, YoffsetYield);
-  StyleHistoYield(hYieldPubStat, LimInfYield, LimSupYield, kAzure+7, 33, SMultType[MultType] + " Multiplicity Percentile", TitleYYieldPtInt, "", 2, 1.15, YoffsetYield);
-  StyleHistoYield(hYieldPubSist, LimInfYield, LimSupYield, kAzure+7, 33, SMultType[MultType] + " Multiplicity Percentile", TitleYYieldPtInt, "", 2, 1.15, YoffsetYield);
+  StyleHistoYield(hYieldPubStat, LimInfYield, LimSupYield, kAzure + 7, 33, SMultType[MultType] + " Multiplicity Percentile", TitleYYieldPtInt, "", 2, 1.15, YoffsetYield);
+  StyleHistoYield(hYieldPubSist, LimInfYield, LimSupYield, kAzure + 7, 33, SMultType[MultType] + " Multiplicity Percentile", TitleYYieldPtInt, "", 2, 1.15, YoffsetYield);
   LegendPub->AddEntry(hYieldPubSist, "Eur.Phys.J.C 80 (2020) 167, 2020", "pl");
   canvasYield->cd();
   hYield->Draw("e");
@@ -601,16 +639,24 @@ void YieldFit(Int_t typefit = 3, //mT scaling, Boltzmann, Fermi-Direc, Levi
   LegendTitle->Draw("");
   legendfitSummary->Draw("");
 
+  if (isSysStudy)
+    stringout += SysPath;
+  stringout += "_" + nameFitFile[typefit];
+  stringout += "_" + EventType[evFlag];
+  //  stringout += Form("_FitRangeUp%.1f", UpRange[0]);
+  stringoutpdf = stringout;
+  stringout += ".root";
+  TFile *fileout = new TFile(stringout, "RECREATE");
   canvasPtSpectra->SaveAs(stringoutpdf + ".pdf");
-  canvasYield->SaveAs(stringoutpdf+ "_YieldsvsPerc.pdf");
-  canvasChi2->SaveAs(stringoutpdf+ "_Chi2vsPerc.pdf");
-  canvasTemp->SaveAs(stringoutpdf+ "_TempvsPerc.pdf");
-  canvasFracExtrYield->SaveAs(stringoutpdf+ "_FracExtrYieldvsPerc.pdf");
+  canvasYield->SaveAs(stringoutpdf + "_YieldsvsPerc.pdf");
+  canvasChi2->SaveAs(stringoutpdf + "_Chi2vsPerc.pdf");
+  canvasTemp->SaveAs(stringoutpdf + "_TempvsPerc.pdf");
+  canvasFracExtrYield->SaveAs(stringoutpdf + "_FracExtrYieldvsPerc.pdf");
   canvasPtSpectra->SaveAs(stringoutpdf + ".png");
-  canvasYield->SaveAs(stringoutpdf+ "_YieldsvsPerc.png");
-  canvasChi2->SaveAs(stringoutpdf+ "_Chi2vsPerc.png");
-  canvasTemp->SaveAs(stringoutpdf+ "_TempvsPerc.png");
-  canvasFracExtrYield->SaveAs(stringoutpdf+ "_FracExtrYieldvsPerc.png");
+  canvasYield->SaveAs(stringoutpdf + "_YieldsvsPerc.png");
+  canvasChi2->SaveAs(stringoutpdf + "_Chi2vsPerc.png");
+  canvasTemp->SaveAs(stringoutpdf + "_TempvsPerc.png");
+  canvasFracExtrYield->SaveAs(stringoutpdf + "_FracExtrYieldvsPerc.png");
 
   fileout->cd();
   hYield->Write();

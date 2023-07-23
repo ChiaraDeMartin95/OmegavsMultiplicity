@@ -16,6 +16,7 @@
 #include "TLegend.h"
 #include "/Users/mbp-cdm-01/Desktop/AssegnoRicerca/Run3Analyses/OmegavsMult/Constants.h"
 #include "ErrRatioCorr.C"
+#include "/Users/mbp-cdm-01/Desktop/AssegnoRicerca/Run3Analyses/OmegavsMult/InputVar.h"
 
 void StyleCanvas(TCanvas *canvas, Float_t LMargin, Float_t RMargin, Float_t TMargin, Float_t BMargin)
 {
@@ -69,17 +70,17 @@ TString titlePt = "p_{T} (GeV/c)";
 TString titleYield = "1/N_{ev} dN/dp_{T}";
 
 void YieldEffCorr(Int_t part = 6,
-                  TString SPathInEff = "eff_LHC22o_pass4_Train100720.root" /*"eff_LHC22o_pass4_Sel23June.root" /*"eff6June.root"*/,
-                  TString SysPath = "_Train100720" /*"_Sel23June"*/,
+                  TString SPathInEff = ExtrSPathInEff,
+                  TString SysPath = ExtrSysPath,
                   TString OutputDir = "Yields",
-                  TString year = "LHC22o_pass4_Train99659" /*"LHC22o_pass4_Train89684" /*"LHC22m_pass4_Train79153"*/,
-                  Bool_t isBkgParab = 1,
+                  TString year = Extryear,
+                  Bool_t isBkgParab = ExtrisBkgParab,
                   Bool_t isSysStudy = 1,
-                  Int_t MultType = 1, // 0: no mult for backward compatibility, 1: FT0M, 2: FV0M
+                  Int_t MultType = ExtrMultType, // 0: no mult for backward compatibility, 1: FT0M, 2: FV0M
                   Bool_t isMB = 1,
                   Int_t mul = 0,
-                  Bool_t UseTwoGauss = 1,
-                  Int_t evFlag = 1 // 0: INEL - 1; 1: INEL > 0; 2: INEL > 1
+                  Bool_t UseTwoGauss = ExtrUseTwoGauss,
+                  Int_t evFlag = ExtrevFlag // 0: INEL - 1; 1: INEL > 0; 2: INEL > 1
 )
 {
 

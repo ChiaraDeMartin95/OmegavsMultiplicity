@@ -15,6 +15,7 @@
 #include "TFitResult.h"
 #include "TLegend.h"
 #include "/Users/mbp-cdm-01/Desktop/AssegnoRicerca/Run3Analyses/OmegavsMult/Constants.h"
+#include "/Users/mbp-cdm-01/Desktop/AssegnoRicerca/Run3Analyses/OmegavsMult/InputVar.h"
 
 void StyleCanvas(TCanvas *canvas, Float_t LMargin, Float_t RMargin, Float_t TMargin, Float_t BMargin)
 {
@@ -131,24 +132,25 @@ Float_t limsup[numPart] = {0.545, 1.1168, 1.1168, 1.35, 1.35, 1.35, 1.71, 1.71, 
 Float_t liminfDefault[numPart] = {0};
 Float_t limsupDefault[numPart] = {0};
 
-void YieldsVsPt(Int_t SysSigExtr = 0, // 0: default, 1: pol1 bkg, 2: tighter range + pol2, 3: tighter range + pol1
-                Bool_t isSysStudy = 1,
-                TString SysPath = "_Train100720" /*"_Sel3July"*/,
-                Int_t part = 8,
-                Bool_t isYAxisMassZoomed = 0,
-                Int_t MassRebin = 2,
-                Int_t MultType = 1, // 0: no mult for backward compatibility, 1: FT0M, 2: FV0A
-                Bool_t isMB = 1,
-                Int_t mul = 0,
-                TString year = "LHC22o_pass4_Train99659" /*"LHC22o_pass4_Train89684" /*"LHC22o_pass3_Train75538" /*"LHC22r_pass3_Train67853"*/,
-                TString SPathIn = "OutputFilesCascPPTask/LHC22o_pass4/AnalysisResults",
-                TString SPathInEvt = "AnalysisResultsCascQATask/LHC22o_pass4/AnalysisResultsEvts",
-                TString OutputDir = "Yields",
-                Bool_t UseTwoGauss = 1,
-                Bool_t isBkgParab = 1,
-                Bool_t isMeanFixedPDG = 0,
-                Float_t sigmacentral = 4.2,
-                Int_t evFlag = 1 // 0: INEL - 1; 1: INEL > 0; 2: INEL > 1
+void YieldsVsPt(
+    Bool_t isSysStudy = 1,
+    TString SysPath = ExtrSysPath,
+    Int_t part = 8,
+    Bool_t isYAxisMassZoomed = 0,
+    Int_t MassRebin = 2,
+    Int_t MultType = ExtrMultType, // 0: no mult for backward compatibility, 1: FT0M, 2: FV0A
+    Bool_t isMB = 1,
+    Int_t mul = 0,
+    TString year = Extryear,
+    TString SPathIn = "OutputFilesCascPPTask/LHC22o_pass4/AnalysisResults",
+    TString SPathInEvt = "AnalysisResultsCascQATask/LHC22o_pass4/AnalysisResultsEvts",
+    TString OutputDir = "Yields",
+    Bool_t UseTwoGauss = ExtrUseTwoGauss,
+    Bool_t isBkgParab = ExtrisBkgParab,
+    Bool_t isMeanFixedPDG = 0,
+    Float_t sigmacentral = 4.2,
+    Int_t evFlag = ExtrevFlag,     // 0: INEL - 1; 1: INEL > 0; 2: INEL > 1,
+    Int_t SysSigExtr = 0 // 0: default, 1: pol1 bkg, 2: tighter range + pol2, 3: tighter range + pol1
 )
 {
 
@@ -421,6 +423,7 @@ void YieldsVsPt(Int_t SysSigExtr = 0, // 0: default, 1: pol1 bkg, 2: tighter ran
     gPad->SetLeftMargin(0.15);
     gPad->SetRightMargin(0.1);
     gPad->SetBottomMargin(0.2);
+    // hInvMass[pt]->GetXaxis()->SetRangeUser(liminfDefault[part], limsupDefault[part]);
     hInvMass[pt]->Draw("e same");
 
     counts = 0;
@@ -506,26 +509,13 @@ void YieldsVsPt(Int_t SysSigExtr = 0, // 0: default, 1: pol1 bkg, 2: tighter ran
   {
     if (part == 6 || part == 7 || part == 8)
     { // Omega
-      /*
-        min_histo[part] = 1.64;
-        liminf[part] = 1.64;
-        max_histo[part] = 1.704; // 1.7
-        limsup[part] = 1.704;    // 1.7
-        if (binpt[pt] < 1.3)
-        {
-          min_histo[part] = 1.63;
-          liminf[part] = 1.63;
-          max_histo[part] = 1.71; // 1.7
-          limsup[part] = 1.71;    // 1.7
-        }
-        */
       liminf[part] = 1.63;
       limsup[part] = 1.71;
       liminfDefault[part] = 1.626;
       limsupDefault[part] = 1.72;
-      //min_histo[part] = 1.6;
+      // min_histo[part] = 1.6;
       min_histo[part] = 1.626;
-      //max_histo[part] = 1.74;
+      // max_histo[part] = 1.74;
       max_histo[part] = 1.72;
       if (SysSigExtr == 2)
       {
@@ -743,6 +733,7 @@ void YieldsVsPt(Int_t SysSigExtr = 0, // 0: default, 1: pol1 bkg, 2: tighter ran
 
       if (UseTwoGaussUpdated)
       {
+
         if (pt < 9)
           canvas[0]->cd(pt + 1);
         else if (pt < 18)
@@ -751,6 +742,8 @@ void YieldsVsPt(Int_t SysSigExtr = 0, // 0: default, 1: pol1 bkg, 2: tighter ran
           canvas[2]->cd(pt + 1 - 18);
         else
           canvas[3]->cd(pt + 1 - 27);
+        hInvMass[pt]->GetXaxis()->SetRangeUser(liminfDefault[part], limsupDefault[part]);
+        hInvMass[pt]->Draw("same e");
         functions1[pt]->Draw("same");
         functions2[pt]->Draw("same");
         if (isBkgParab)
@@ -872,7 +865,6 @@ void YieldsVsPt(Int_t SysSigExtr = 0, // 0: default, 1: pol1 bkg, 2: tighter ran
         bkg1[pt]->FixParameter(0, total[pt]->GetParameter(3));
         bkg1[pt]->FixParameter(1, total[pt]->GetParameter(4));
       }
-
       if (pt < 9)
         canvas[0]->cd(pt + 1);
       else if (pt < 18)
@@ -881,6 +873,9 @@ void YieldsVsPt(Int_t SysSigExtr = 0, // 0: default, 1: pol1 bkg, 2: tighter ran
         canvas[2]->cd(pt + 1 - 18);
       else
         canvas[3]->cd(pt + 1 - 27);
+      hInvMass[pt]->GetXaxis()->SetRangeUser(liminfDefault[part], limsupDefault[part]);
+      hInvMass[pt]->Draw("same e");
+
       if (isBkgParab)
         bkg2[pt]->Draw("same");
       else
@@ -939,8 +934,6 @@ void YieldsVsPt(Int_t SysSigExtr = 0, // 0: default, 1: pol1 bkg, 2: tighter ran
     else
       canvas[3]->cd(pt + 1 - 27);
 
-    // cout << mean[pt] - sigmacentral * sigma[pt] << "-" << mean[pt] + sigmacentral * sigma[pt] << endl;
-    //  Compute yield
     LowLimit[pt] = hInvMass[pt]->GetXaxis()->GetBinLowEdge(hInvMass[pt]->GetXaxis()->FindBin(mean[pt] - sigmacentral * sigma[pt]));
     UpLimit[pt] = hInvMass[pt]->GetXaxis()->GetBinUpEdge(hInvMass[pt]->GetXaxis()->FindBin(mean[pt] + sigmacentral * sigma[pt]));
 
@@ -1181,6 +1174,7 @@ void YieldsVsPt(Int_t SysSigExtr = 0, // 0: default, 1: pol1 bkg, 2: tighter ran
       index = 6;
     else
       continue;
+
     canvasMass->cd(index);
     gPad->SetBottomMargin(0.14);
     gPad->SetLeftMargin(0.18);

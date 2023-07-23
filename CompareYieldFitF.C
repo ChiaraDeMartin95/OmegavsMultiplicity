@@ -23,6 +23,7 @@
 #include "TGraphAsymmErrors.h"
 #include "Constants.h"
 #include "ErrRatioCorr.C"
+#include "/Users/mbp-cdm-01/Desktop/AssegnoRicerca/Run3Analyses/OmegavsMult/InputVar.h"
 
 void StyleHisto(TH1F *histo, Float_t Low, Float_t Up, Int_t color, Int_t style, TString TitleX, TString TitleY, TString title)
 {
@@ -113,13 +114,15 @@ void StylePad(TPad *pad, Float_t LMargin, Float_t RMargin, Float_t TMargin, Floa
 
 void CompareYieldFitF(
     Int_t part = 8,
-    TString SysPath = "_Sel23June" /*"_Sel6June"*/,
+    TString SysPath = ExtrSysPath,
     TString OutputDir = "CompareFitFunctions/",
-    TString year = "LHC22o_pass4_Train89684" /*"LHC22m_pass4_Train79153"*/,
-    Bool_t isBkgParab = 1,
+    TString year = Extryear, 
+    Bool_t isBkgParab = ExtrisBkgParab,
     Bool_t isSysStudy = 1,
-    Int_t MultType = 1, // 0: no mult for backward compatibility, 1: FT0M, 2: FV0A
-    Bool_t UseTwoGauss = 1)
+    Int_t MultType = ExtrMultType, // 0: no mult for backward compatibility, 1: FT0M, 2: FV0A
+    Bool_t UseTwoGauss = ExtrUseTwoGauss,
+    Int_t evFlag = ExtrevFlag // 0: INEL - 1; 1: INEL > 0; 2: INEL > 1
+)
 {
 
   // multiplicity related variables
@@ -196,7 +199,7 @@ void CompareYieldFitF(
 
   for (Int_t f = 0; f < numfittipo; f++)
   {
-    if (f > 3)
+    if (f > 4)
       continue;
     PathIn = "PtIntegratedYields/";
     PathIn += "PtIntegratedYields_" + year;
@@ -206,6 +209,7 @@ void CompareYieldFitF(
     if (isSysStudy)
       PathIn += SysPath;
     PathIn += "_" + nameFitFile[f];
+    PathIn += "_" + EventType[evFlag];
     PathIn += ".root";
     cout << "PathIn: " << PathIn << endl;
     fileIn = TFile::Open(PathIn, "READ");
@@ -344,6 +348,7 @@ void CompareYieldFitF(
   stringout += SIsBkgParab[isBkgParab];
   if (isSysStudy)
     stringout += SysPath;
+  stringout += "_" + EventType[evFlag];
   stringoutpdf = stringout;
   stringout += ".root";
   TFile *fileout = new TFile(stringout, "RECREATE");

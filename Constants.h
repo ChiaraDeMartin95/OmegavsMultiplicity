@@ -78,3 +78,5 @@ Float_t YieldXiMB13TeVErrStat = 0.00019;
 Float_t YieldXiMB13TeVErrSist = 0.00192;
 
 TString SSysSigExtr[] = {"", "", "_narrower1", "_wider1"};
+
+Float_t RelSystYieldTopoSel = 0.138;

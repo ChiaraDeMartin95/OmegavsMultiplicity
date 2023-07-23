@@ -23,6 +23,7 @@
 #include "TGraphAsymmErrors.h"
 #include "Constants.h"
 #include "ErrRatioCorr.C"
+#include "/Users/mbp-cdm-01/Desktop/AssegnoRicerca/Run3Analyses/OmegavsMult/InputVar.h"
 
 void StyleHisto(TH1F *histo, Float_t Low, Float_t Up, Int_t color, Int_t style, TString TitleX, TString TitleY, TString title)
 {
@@ -123,13 +124,15 @@ void StylePad(TPad *pad, Float_t LMargin, Float_t RMargin, Float_t TMargin, Floa
 void FinalYieldvsMult(
     Int_t dNdEtaFlag = 1,
     Int_t part = 8,
-    TString SysPath = "_Sel23June" /*"_Sel6June"*/,
-    Bool_t isBkgParab = 1,
+    TString SysPath = ExtrSysPath,
+    Bool_t isBkgParab = ExtrisBkgParab,
     TString OutputDir = "PtIntegratedYields/",
-    TString year = "LHC22o_pass4_Train89684" /*"LHC22m_pass4_Train79153"*/,
+    TString year = Extryear, 
     Bool_t isSysStudy = 1,
-    Int_t MultType = 1, // 0: no mult for backward compatibility, 1: FT0M, 2: FV0A
-    Bool_t UseTwoGauss = 1)
+    Int_t MultType = ExtrMultType, // 0: no mult for backward compatibility, 1: FT0M, 2: FV0A
+    Bool_t UseTwoGauss = ExtrUseTwoGauss,
+    Int_t evFlag = ExtrevFlag // 0: INEL - 1; 1: INEL > 0; 2: INEL > 1
+)
 {
 
   // multiplicity related variables
@@ -153,6 +156,7 @@ void FinalYieldvsMult(
   stringout += SIsBkgParab[isBkgParab];
   if (isSysStudy)
     stringout += SysPath;
+  stringout += "_" + EventType[evFlag];
   stringoutpdf = stringout;
   stringout += ".root";
   TFile *fileout = new TFile(stringout, "RECREATE");
@@ -163,6 +167,9 @@ void FinalYieldvsMult(
 
   TCanvas *canvasYield = new TCanvas("canvasYield", "canvasYield", 900, 700);
   StyleCanvas(canvasYield, 0.05, 0.15, 0.2, 0.02);
+
+  TCanvas *canvasRelErrorYield = new TCanvas("canvasRelErrorYield", "canvasRelErrorYield", 900, 700);
+  StyleCanvas(canvasRelErrorYield, 0.05, 0.15, 0.2, 0.02);
 
   TLegend *LegendTitle = new TLegend(0.54, 0.75, 0.95, 0.92);
   LegendTitle->SetFillStyle(0);
@@ -182,6 +189,11 @@ void FinalYieldvsMult(
   legendfitSummary->SetTextSize(0.04);
   legendfitSummary->SetTextAlign(13);
 
+  TLegend * legendErrorSummary = new TLegend(0.23, 0.75, 0.42, 0.93);
+  legendErrorSummary->SetFillStyle(0);
+  legendErrorSummary->SetTextSize(0.04);
+  legendErrorSummary->SetTextAlign(13);
+
   // fit spectra
   Float_t LimInfYield = 0;
   Float_t LimSupYield = 0.01;
@@ -191,7 +203,10 @@ void FinalYieldvsMult(
   TH1F *hYieldSist;
   TH1F *hYieldSistTotal;
   TH1F *hYieldSistFitChoice;
+  TH1F *hYieldSistTopoSel;
   TH1F *hYieldSistRelFitChoice;
+  TH1F *hYieldSistRelTopoSel;
+  TH1F *hYieldSistRelTotal;
   TH1F *hChi2;
   TH1F *hFracExtrYield;
   TH1F *hTemp;
@@ -206,6 +221,7 @@ void FinalYieldvsMult(
   if (isSysStudy)
     PathIn += SysPath;
   PathIn += "_Levi";
+  PathIn += "_" + EventType[evFlag];
   PathIn += ".root";
   cout << "PathIn: " << PathIn << endl;
   fileIn = TFile::Open(PathIn, "READ");
@@ -216,6 +232,7 @@ void FinalYieldvsMult(
   PathInSistFitChoice += SIsBkgParab[isBkgParab];
   if (isSysStudy)
     PathInSistFitChoice += SysPath;
+  PathInSistFitChoice += "_" + EventType[evFlag];
   PathInSistFitChoice += ".root";
   cout << "PathInSistFitChoice: " << PathInSistFitChoice << endl;
   fileInSistFitChoice = TFile::Open(PathInSistFitChoice, "READ");
@@ -223,8 +240,16 @@ void FinalYieldvsMult(
   hYield = (TH1F *)fileIn->Get("hYield");
   hYield->SetName("hYieldStrange");
   hYieldSist = (TH1F *)fileIn->Get("hYieldSist");
+  hYieldSistTopoSel = (TH1F *)hYieldSist->Clone("hYieldSistTopoSel");
   hYieldSistRelFitChoice = (TH1F *)fileInSistFitChoice->Get("hRelUncFitChoice");
   hYieldSistFitChoice = (TH1F *)hYieldSist->Clone("hYieldSistFitChoice");
+  Float_t RelErrorSystYieldTopoSel = RelSystYieldTopoSel;
+  Float_t ErrorSystYieldTopoSel[numMult + 1] = {0};
+  for (Int_t i = 1; i <= hYieldSistTopoSel->GetNbinsX(); i++)
+  {
+    ErrorSystYieldTopoSel[i] = RelErrorSystYieldTopoSel * hYieldSistTopoSel->GetBinContent(i);
+    hYieldSistTopoSel->SetBinError(i, ErrorSystYieldTopoSel[i]);
+  }
   for (Int_t i = 1; i <= hYieldSistFitChoice->GetNbinsX(); i++)
   {
     hYieldSistFitChoice->SetBinError(i, hYieldSistRelFitChoice->GetBinContent(i) * hYieldSist->GetBinContent(i));
@@ -232,8 +257,23 @@ void FinalYieldvsMult(
   hYieldSistTotal = (TH1F *)hYieldSist->Clone("hYieldSistTotal");
   for (Int_t i = 1; i <= hYieldSistTotal->GetNbinsX(); i++)
   {
-    hYieldSistTotal->SetBinError(i, TMath::Sqrt(hYieldSist->GetBinError(i) * hYieldSist->GetBinError(i) + hYieldSistFitChoice->GetBinError(i) * hYieldSistFitChoice->GetBinError(i)));
+    // hYieldSistTotal->SetBinError(i, TMath::Sqrt(hYieldSist->GetBinError(i) * hYieldSist->GetBinError(i) + hYieldSistFitChoice->GetBinError(i) * hYieldSistFitChoice->GetBinError(i)));
+    hYieldSistTotal->SetBinError(i, TMath::Sqrt(
+                                        hYieldSist->GetBinError(i) * hYieldSist->GetBinError(i) +
+                                        hYieldSistTopoSel->GetBinError(i) * hYieldSistTopoSel->GetBinError(i) +
+                                        hYieldSistFitChoice->GetBinError(i) * hYieldSistFitChoice->GetBinError(i)));
   }
+
+  hYieldSistRelTotal = (TH1F *)hYieldSistTotal->Clone("hYieldSistRelTotal");
+  hYieldSistRelTopoSel = (TH1F *)hYieldSistTopoSel->Clone("hYieldSistRelTopoSel");
+  for (Int_t i = 1; i <= hYieldSistRelTotal->GetNbinsX(); i++)
+  {
+    hYieldSistRelTotal->SetBinContent(i, hYieldSistTotal->GetBinError(i) / hYieldSistTotal->GetBinContent(i));
+    hYieldSistRelTotal->SetBinError(i, 0);
+    hYieldSistRelTopoSel->SetBinContent(i, hYieldSistTopoSel->GetBinError(i) / hYieldSistTopoSel->GetBinContent(i));
+    hYieldSistRelTopoSel->SetBinError(i, 0);
+  }
+
   hYieldPubStat = (TH1F *)fileIn->Get("hYieldPubStat");
   hYieldPubSist = (TH1F *)fileIn->Get("hYieldPubSist");
 
@@ -242,6 +282,10 @@ void FinalYieldvsMult(
 
   StyleHistoYield(hYieldPubStat, LimInfYield, LimSupYield, kAzure + 7, 33, SMultType[MultType] + " Multiplicity Percentile", TitleYYieldPtInt, "", 2, 1.15, YoffsetYield);
   StyleHistoYield(hYieldPubSist, LimInfYield, LimSupYield, kAzure + 7, 33, SMultType[MultType] + " Multiplicity Percentile", TitleYYieldPtInt, "", 2, 1.15, YoffsetYield);
+
+  StyleHistoYield(hYieldSistRelTotal, 0, 0.3, 1, 22, SMultType[MultType] + " Multiplicity Percentile", "Rel. error", "", 2, 1.15, YoffsetYield);
+  StyleHistoYield(hYieldSistRelTopoSel, 0, 0.3, kGreen+2, 22, SMultType[MultType] + " Multiplicity Percentile", "Rel. error", "", 2, 1.15, YoffsetYield);
+  StyleHistoYield(hYieldSistRelFitChoice, 0, 0.3, kViolet, 22, SMultType[MultType] + " Multiplicity Percentile", "Rel. error", "", 2, 1.15, YoffsetYield);
 
   LegendPub->AddEntry(hYieldPubSist, "Eur.Phys.J.C 80 (2020) 167, 2020", "pl");
 
@@ -254,10 +298,21 @@ void FinalYieldvsMult(
   hYieldPubSist->Draw("same e2");
   LegendTitle->Draw("");
   LegendPub->Draw("");
-  legendfitSummary->Draw("same");
 
   canvasYield->SaveAs(stringoutpdf + "_YieldsvsPerc.pdf");
   canvasYield->SaveAs(stringoutpdf + "_YieldsvsPerc.png");
+
+  canvasRelErrorYield->cd();
+  hYieldSistRelTotal->Draw("same");
+  hYieldSistRelTopoSel->Draw("same");
+  hYieldSistRelFitChoice->Draw("same");
+  LegendTitle->Draw("");
+  legendErrorSummary->AddEntry(hYieldSistRelTotal, "Total", "pl");
+  legendErrorSummary->AddEntry(hYieldSistRelTopoSel, "Topological selection", "pl");
+  legendErrorSummary->AddEntry(hYieldSistRelFitChoice, "Fit choice", "pl");
+  legendErrorSummary->Draw("same");
+  canvasRelErrorYield->SaveAs(stringoutpdf + "_RelErrorYieldsvsPerc.pdf");
+  canvasRelErrorYield->SaveAs(stringoutpdf + "_RelErrorYieldsvsPerc.png");
 
   //*********** Draw yield vs dNdeta ************//
   Float_t dNdEta[numMult + 1] = {0};
@@ -458,12 +513,12 @@ void FinalYieldvsMult(
   for (Int_t i = 0; i < hYieldvsMultPubStat->GetNbinsX(); i++)
   {
     if (hYieldvsMultPubStat->GetBinContent(i + 1) == 0)
-      continue;  
+      continue;
     dNdEtaPubToMB[i] = hYieldvsMultPubStat->GetBinCenter(i + 1) / dNdEtaRun2MB;
-    dNdEtaErrorPubToMB[i] = hYieldvsMultPubStat->GetBinWidth(i + 1) / dNdEtaRun2MB /2;
+    dNdEtaErrorPubToMB[i] = hYieldvsMultPubStat->GetBinWidth(i + 1) / dNdEtaRun2MB / 2;
     YieldsPubToMB[i] = hYieldvsMultPubStat->GetBinContent(i + 1) / YieldPubMB;
-    YieldsPubErrorsStatToMB[i] = YieldsPubToMB[i] * sqrt(pow(hYieldvsMultPubStat->GetBinError(i + 1)/hYieldvsMultPubStat->GetBinContent(i + 1), 2) + pow(YieldPubMBErrStat/YieldPubMB, 2));
-    YieldsPubErrorsSistToMB[i] = YieldsPubToMB[i] * sqrt(pow(hYieldvsMultPubSist->GetBinError(i + 1)/hYieldvsMultPubStat->GetBinContent(i + 1), 2) + pow(YieldPubMBErrSist/YieldPubMB, 2));
+    YieldsPubErrorsStatToMB[i] = YieldsPubToMB[i] * sqrt(pow(hYieldvsMultPubStat->GetBinError(i + 1) / hYieldvsMultPubStat->GetBinContent(i + 1), 2) + pow(YieldPubMBErrStat / YieldPubMB, 2));
+    YieldsPubErrorsSistToMB[i] = YieldsPubToMB[i] * sqrt(pow(hYieldvsMultPubSist->GetBinError(i + 1) / hYieldvsMultPubStat->GetBinContent(i + 1), 2) + pow(YieldPubMBErrSist / YieldPubMB, 2));
     cout << hYieldvsMultPubStat->GetBinCenter(i + 1) << " dNdetaMB Run 2 " << dNdEtaRun2MB << endl;
   }
 

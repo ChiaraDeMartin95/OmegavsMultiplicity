@@ -1,4 +1,5 @@
 #include <Riostream.h>
+#include <string>
 #include <TFile.h>
 #include <TH3.h>
 #include <TH2.h>
@@ -69,21 +70,30 @@ void StyleHisto(TH1F *histo, Float_t Low, Float_t Up, Int_t color, Int_t style, 
 TString titlePt = "p_{T} (GeV/c)";
 TString titleYield = "1/N_{ev} dN/dp_{T}";
 
-void YieldEffCorr(Int_t part = 6,
-                  TString SPathInEff = ExtrSPathInEff,
-                  TString SysPath = ExtrSysPath,
+void YieldEffCorr(Int_t part = 8,
+                  Bool_t isMB = 1,
+                  Int_t mul = 0,
+                  TString SPathInEff = "",
+                  string SysPath = "",
                   TString OutputDir = "Yields",
                   TString year = Extryear,
                   Bool_t isBkgParab = ExtrisBkgParab,
                   Bool_t isSysStudy = 1,
                   Int_t MultType = ExtrMultType, // 0: no mult for backward compatibility, 1: FT0M, 2: FV0M
-                  Bool_t isMB = 1,
-                  Int_t mul = 0,
                   Bool_t UseTwoGauss = ExtrUseTwoGauss,
                   Int_t evFlag = ExtrevFlag // 0: INEL - 1; 1: INEL > 0; 2: INEL > 1
 )
 {
 
+  if (part == 3 || part == 4 || part == 5)
+    SysPath = ExtrSysPathXi;
+  else if (part == 6 || part == 7 || part == 8)
+    SysPath = ExtrSysPathOmega;
+
+  if (part == 3 || part == 4 || part == 5)
+    SPathInEff = ExtrSPathInEffXi;
+  else if (part == 6 || part == 7 || part == 8)
+    SPathInEff = ExtrSPathInEffOmega;
   if (mul > numMult)
   {
     cout << "Multiplciity out of range" << endl;
@@ -159,13 +169,13 @@ void YieldEffCorr(Int_t part = 6,
   TString dirName = "";
   if (SysPath == "_Sel23June")
     dirName = "effCascade";
-  else if (SysPath == "_Train100720")
+  else if (SysPath == "_Train100720" || SysPath.find("_Train109") != string::npos || SysPath.find("_Train110") != string::npos)
     dirName = "effAcc";
   else
     dirName = "effOmega";
   TDirectoryFile *dir = (TDirectoryFile *)fileinEff->Get(dirName);
   TString inputNameEff = "hEff";
-  if (SysPath == "_Sel23June" || SysPath == "_Train100720")
+  if (SysPath == "_Sel23June" || SysPath == "_Train100720" || SysPath.find("_Train109") != string::npos || SysPath.find("_Train110") != string::npos)
     inputNameEff += "Casc";
   else
   {
@@ -248,52 +258,86 @@ void YieldEffCorr(Int_t part = 6,
   TFile *fileinPub;
   TString histoPubName;
   TH1F *histoPub;
+  TH1F *histoPubErr;
   TH1F *histoPubFinal;
+  TDirectory *dirPub;
+  TString SdirPub = "";
+
+  /*
   for (Int_t i = 0; i <= 1; i++)
   { // loop over particle and antiparticle and sum them if needed
+
+    if (part == 6 && i == 1)
+      continue;
+    if (part == 7 && i == 0)
+      continue;
+    SPathInPub = "PublishedYield13TeV/Results-Omega";
+    if (i == 0)
+      SPathInPub += "Minus";
+    else if (i == 1)
+      SPathInPub += "Plus";
+    SPathInPub += "-V0M-000to100_WithV0refitAndImprovedDCA.root";
+    cout << SPathInPub << endl;
+    fileinPub = new TFile(SPathInPub, "");
+    if (!fileinPub)
     {
-      if (part == 6 && i == 1)
-        continue;
-      if (part == 7 && i == 0)
-        continue;
-      SPathInPub = "PublishedYield13TeV/Results-Omega";
+      cout << "No pub yield file " << endl;
+      return;
+    }
+    histoPubName = "fHistPtOmega";
+    if (i == 0)
+      histoPubName += "Minus";
+    else if (i == 1)
+      histoPubName += "Plus";
+    histoPub = (TH1F *)fileinPub->Get(histoPubName);
+    if (part == 6 || part == 7)
+      histoPubFinal = (TH1F *)histoPub->Clone("histoPubFinal");
+    else
+    {
       if (i == 0)
-        SPathInPub += "Minus";
-      else if (i == 1)
-        SPathInPub += "Plus";
-      SPathInPub += "-V0M-000to100_WithV0refitAndImprovedDCA.root";
-      cout << SPathInPub << endl;
-      fileinPub = new TFile(SPathInPub, "");
-      if (!fileinPub)
-      {
-        cout << "No pub yield file " << endl;
-        return;
-      }
-      histoPubName = "fHistPtOmega";
-      if (i == 0)
-        histoPubName += "Minus";
-      else if (i == 1)
-        histoPubName += "Plus";
-      histoPub = (TH1F *)fileinPub->Get(histoPubName);
-      if (part == 6 || part == 7)
         histoPubFinal = (TH1F *)histoPub->Clone("histoPubFinal");
       else
-      {
-        if (i == 0)
-          histoPubFinal = (TH1F *)histoPub->Clone("histoPubFinal");
-        else
-          histoPubFinal->Add(histoPub);
-      }
+        histoPubFinal->Add(histoPub);
     }
   }
+*/
+  if (part >= 3 && part <= 5)
+  {
+    SPathInPub = "PublishedYield13TeV/HEPData-ins1748157-v1-Table_3.root";
+    SdirPub = "Table 3";
+    histoPubName = "Hist1D_y11";
+  }
+  else if (part >= 6 && part <= 8)
+  {
+    SPathInPub = "PublishedYield13TeV/HEPData-ins1748157-v1-Table_4.root";
+    SdirPub = "Table 4";
+    histoPubName = "Hist1D_y6";
+  }
+  cout << SPathInPub << endl;
+  fileinPub = new TFile(SPathInPub, "");
+  if (!fileinPub)
+  {
+    cout << "No pub yield file " << endl;
+    return;
+  }
+  dirPub = (TDirectory *)fileinPub->Get(SdirPub);
+  histoPub = (TH1F *)dirPub->Get(histoPubName);
+  histoPubErr = (TH1F *)dirPub->Get(histoPubName + "_e1");
+  for (Int_t j = 1; j <= histoPub->GetNbinsX(); j++)
+  {
+    histoPub->SetBinError(j, histoPubErr->GetBinContent(j));
+  }
+  histoPubFinal = (TH1F *)histoPub->Clone("histoPubFinal");
+  if (!(part == 5 || part == 8))
+    histoPubFinal->Scale(1. / 2);
 
   StyleHisto(histoPubFinal, 0, 1.3 * histoPubFinal->GetBinContent(histoPubFinal->GetMaximumBin()), kAzure + 7, 33, TitleXPt, titleYield, "", 0, 0, 0, 1.5, 1.5, 2);
 
   TCanvas *canvasComp = new TCanvas("canvasComp" + Spart[part], "canvasComp" + Spart[part], 1000, 800);
   StyleCanvas(canvasComp, 0.15, 0.05, 0.05, 0.15);
   canvasComp->cd();
-  histoYieldCorr->Draw("same");
   histoPubFinal->Draw("same");
+  histoYieldCorr->Draw("same");
   if (isMB == 1)
   {
     canvasComp->SaveAs(Sfileout + "_CompPub.pdf");

@@ -2,7 +2,7 @@ string ExtrSysPathOmega = "_Train110357";
 //Old ones: "_Train109354";
 string ExtrSysPathXi = "_Train109827";
 // old ones: "_Train100720", "_Sel3July"
-string Extryear = "LHC22o_pass4_MinBias_Train108123";
+TString Extryear = "LHC22o_pass4_MinBias_Train108123";
 // old ones: "LHC22o_pass4_Train99659", "LHC22o_pass4_Train89684", "LHC22o_pass3_Train75538", "LHC22r_pass3_Train67853"
 TString ExtrSPathInEffOmega = "effChiaraOmega_inelgt0_lhc23e1b_3aug.root";
 TString ExtrSPathInEffXi = "effChiaraXi_inelgt0_lhc23e1b_3aug.root";

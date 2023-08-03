@@ -18,6 +18,7 @@ Python macro which changes json file: O2/json_config.py
 YieldsVsPt.C : fit to inv masses + spectra (saved in Yields directory)
 Takes in input the files in OutputFilesCascPPTask
 
+//OPTONAL MACROS TO PRODUCE PLOTS ------------
 PseudoEfficiency.C : compute PseudoEfficiency
 Takes in input files in Yields directory
 
@@ -27,9 +28,17 @@ Takes in input files in Yields directory
 CompareAntiParticles.C : compares mean values, sigmas, purity and yields of particle and anti-particle
 Takes in input files in Yields directory
 
+MeanSigmaPurityMultRatio.C : compares mean values, sigmas, purity and raw yields vs multiplicity
+
+MeanSigmaPurityRunByRun.C : compares mean values, sigmas, purity and raw yields vs run number
+//------------------
+
 YieldEffCorr.C : correct raw yields by efficiency and compare them with published ones
 Takes in input files in Yields directory and in Efficiency directory
 
+YieldTotalSist.C: compute total systematic uncertainties from different sources
+
+//MACRO TO PRODUCE SPECTRA PLOTS FOR APPROVAL
 PlotSpectraRatios.C : plots spectra in multiplicity classes + ratio to MB one
 Takes in input files in Yields directory
 
@@ -38,6 +47,5 @@ Use the script script_UpLoadToServer.sh to uploaded the desired files to the gr3
 
 CompareYieldFit.C: compare pt-integrated yields vs mult obtained with different fit functions + computes syst. uncertainty
 
+//MACRO TO PRODUCE YIELD PLOTS FOR APPROVAL
 FinalYieldvsMult.C : produces yield vs dNdeta and compares to Run 2 published AnalysisResults
-
-YieldTotalSist.C: compute total systematic uncertainties from different sources

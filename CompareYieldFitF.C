@@ -1,4 +1,5 @@
 #include "Riostream.h"
+#include "string"
 #include "TTimer.h"
 #include "TROOT.h"
 #include "TStyle.h"
@@ -116,7 +117,7 @@ void CompareYieldFitF(
     Int_t part = 8,
     TString SysPath = ExtrSysPath,
     TString OutputDir = "CompareFitFunctions/",
-    TString year = Extryear, 
+    TString year = Extryear,
     Bool_t isBkgParab = ExtrisBkgParab,
     Bool_t isSysStudy = 1,
     Int_t MultType = ExtrMultType, // 0: no mult for backward compatibility, 1: FT0M, 2: FV0A
@@ -366,6 +367,9 @@ void CompareYieldFitF(
   canvasRatioToTsallis->SaveAs(stringoutpdf + "_RatioToTsallis.pdf");
   canvasNSigmaToTsallis->SaveAs(stringoutpdf + "_NSigmaToTsallis.pdf");
   canvasRelUncFitChoice->SaveAs(stringoutpdf + "_RelUncFitChoice.pdf");
+  canvasRatioToTsallis->SaveAs(stringoutpdf + "_RatioToTsallis.png");
+  canvasNSigmaToTsallis->SaveAs(stringoutpdf + "_NSigmaToTsallis.png");
+  canvasRelUncFitChoice->SaveAs(stringoutpdf + "_RelUncFitChoice.png");
 
   cout << "\nStarting from the files (for the different fit types): " << PathIn << endl;
 

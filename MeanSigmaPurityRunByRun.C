@@ -23,6 +23,7 @@
 #include "TGraphAsymmErrors.h"
 #include "Constants.h"
 #include "ErrRatioCorr.C"
+#include "InputVar.h"
 
 void StyleHisto(TH1F *histo, Float_t Low, Float_t Up, Int_t color, Int_t style, TString TitleX, TString TitleY, TString title)
 {
@@ -123,22 +124,27 @@ Float_t YUp[numPart] = {0};
 Float_t YLowRatio[numChoice] = {0.99, 0.4, 0.8, 0.5, 0.8, 0.8, 0.8};
 Float_t YUpRatio[numChoice] = {1.01, 1.6, 1.2, 1.5, 1.2, 1.2, 1.2};
 
-const Int_t numRuns = 8;
+const Int_t numRuns = 12;
 // multiplicity related variables
-TString Srun[numRuns+1] = {"_Run528534", "_Run528531", "_Run528463", "_Run528461", "_Run528448", "_Run528381", "_Run528379", "_Run528232", ""};
-TString SrunBis[numRuns+1] = {"528534", "528531", "528463", "528461", "528448", "528381", "528379", "528232", "All runs"};
+// LHC22o_pass4
+// TString Srun[numRuns+1] = {"_Run528534", "_Run528531", "_Run528463", "_Run528461", "_Run528448", "_Run528381", "_Run528379", "_Run528232", ""};
+// TString SrunBis[numRuns+1] = {"528534", "528531", "528463", "528461", "528448", "528381", "528379", "528232", "All runs"};
+
+// LHC22o_pass4_MinBias
+TString SrunBis[numRuns + 1] = {"528531", "528461", "528292", "527899", "527895", "527871", "527850", "527240", "527109", "527057", "527041", "526964", "526641"};
+TString Srun[numRuns + 1] = {"_Run528531", "_Run528461", "_Run528292", "_Run527899", "_Run527895", "_Run527871", "_Run527850", "_Run527240", "_Run527109", "_Run527057", "_Run527041", "_Run526964", "_Run526641"};
 
 void MeanSigmaPurityRunByRun(Int_t part = 8,
                              Int_t ChosenRun = 0,
                              Int_t Choice = 0,
-                             Bool_t isBkgParab = 1,
-                             TString SysPath = "_Train100720" /*"_Sel23June" /*"_Sel6June"*/,
-                             TString OutputDir = "RunByRunComparison",
-                             TString year = "LHC22o_pass4_Train99659" /*"LHC22o_pass4_Train89684" /*"LHC22m_pass4_Train79153"*/,
+                             Bool_t isBkgParab = ExtrisBkgParab,
+                             TString SysPath = ExtrSysPath,
+                             TString OutputDir = "RunByRunComparison/",
+                             TString year = Extryear,
                              Bool_t isSysStudy = 1,
-                             Int_t MultType = 1, // 0: no mult for backward compatibility, 1: FT0M, 2: FV0A
-                             Bool_t UseTwoGauss = 1,
-                             Int_t evFlag = 1 // 0: INEL - 1; 1: INEL > 0; 2: INEL > 1
+                             Int_t MultType = ExtrMultType, // 0: no mult for backward compatibility, 1: FT0M, 2: FV0A
+                             Bool_t UseTwoGauss = ExtrUseTwoGauss,
+                             Int_t evFlag = ExtrevFlag // 0: INEL - 1; 1: INEL > 0; 2: INEL > 1
 )
 {
 
@@ -171,15 +177,23 @@ void MeanSigmaPurityRunByRun(Int_t part = 8,
   }
   else if (Choice == 3)
   {
-    YLow[part] = 1e-9;
-    YUp[part] = 1e-4;
+    if (part == 6 || part == 7 || part == 8)
+    {
+      YUp[part] = 1e-4;
+      YLow[part] = 1e-9;
+    }
+    else if (part == 3 || part == 4 || part == 5)
+    {
+      YUp[part] = 1e-3;
+      YLow[part] = 1e-7;
+    }
   }
 
   TString SErrorSpectrum[3] = {"stat.", "syst. uncorr.", "syst. corr."};
 
   // filein
   TString PathIn;
-  TFile *fileIn[numRuns+1];
+  TFile *fileIn[numRuns + 1];
 
   // fileout name
   TString stringout;
@@ -206,10 +220,10 @@ void MeanSigmaPurityRunByRun(Int_t part = 8,
   StylePad(pad1, 0.18, 0.01, 0.03, 0.);   // L, R, T, B
   StylePad(padL1, 0.18, 0.01, 0.02, 0.3); // L, R, T, B
 
-  TH1F *fHistSpectrum[numRuns+1];
-  TH1F *fHistSpectrumScaled[numRuns+1];
-  TString sScaleFactorFinal[numRuns+1];
-  TH1F *fHistSpectrumMultRatio[numRuns+1];
+  TH1F *fHistSpectrum[numRuns + 1];
+  TH1F *fHistSpectrumScaled[numRuns + 1];
+  TString sScaleFactorFinal[numRuns + 1];
+  TH1F *fHistSpectrumMultRatio[numRuns + 1];
 
   gStyle->SetLegendFillColor(0);
   gStyle->SetLegendBorderSize(0);
@@ -236,6 +250,7 @@ void MeanSigmaPurityRunByRun(Int_t part = 8,
   // get spectra in multiplicity classes
   for (Int_t m = numRuns; m >= 0; m--)
   {
+    if (part >=6 && SrunBis[m] == "526641") continue; 
     PathIn = "Yields/Yields_";
     PathIn += Spart[part];
     PathIn += "_" + year;
@@ -244,7 +259,7 @@ void MeanSigmaPurityRunByRun(Int_t part = 8,
     PathIn += "_Mult0-100";
     if (isSysStudy)
       PathIn += SysPath;
-    //PathIn += "_Run" + Srun[m];
+    // PathIn += "_Run" + Srun[m];
     PathIn += Srun[m];
     PathIn += "_" + EventType[evFlag];
     PathIn += ".root";
@@ -261,8 +276,6 @@ void MeanSigmaPurityRunByRun(Int_t part = 8,
   } // end loop on mult
 
   // draw spectra in multiplicity classes
-  Float_t LimSupSpectra = 9.99;
-  Float_t LimInfSpectra = 0.2 * 1e-5;
   Float_t xTitle = 15;
   Float_t xOffset = 4;
   Float_t yTitle = 30;
@@ -287,7 +300,8 @@ void MeanSigmaPurityRunByRun(Int_t part = 8,
   hDummy->GetXaxis()->SetRangeUser(0, 8);
   pad1->Draw();
   pad1->cd();
-  if (Choice == 3) gPad->SetLogy();
+  if (Choice == 3)
+    gPad->SetLogy();
   hDummy->Draw("same");
 
   for (Int_t m = numRuns; m >= 0; m--)
@@ -303,7 +317,7 @@ void MeanSigmaPurityRunByRun(Int_t part = 8,
     fHistSpectrumScaled[m]->SetLineColor(ColorMult[m]);
     fHistSpectrumScaled[m]->SetMarkerStyle(MarkerMult[m]);
     fHistSpectrumScaled[m]->SetMarkerSize(0.6 * SizeMult[m]);
-     fHistSpectrumScaled[m]->GetYaxis()->SetRangeUser(YLow[part], YUp[part]);
+    fHistSpectrumScaled[m]->GetYaxis()->SetRangeUser(YLow[part], YUp[part]);
     fHistSpectrumScaled[m]->Draw("same e0x0");
     sScaleFactorFinal[m] = "";
     legendAllMult->AddEntry(fHistSpectrumScaled[m], SrunBis[m] + sScaleFactorFinal[m] + " ", "pef");

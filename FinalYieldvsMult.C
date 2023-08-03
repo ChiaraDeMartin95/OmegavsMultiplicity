@@ -494,7 +494,8 @@ void FinalYieldvsMult(
   fitPubYieldvsMult->Draw("same");
   LegendTitle->Draw("");
   LegendPub->Draw("");
-  canvasYieldvsdNdeta->SaveAs("YieldvsdNdeta.pdf");
+  canvasYieldvsdNdeta->SaveAs(stringoutpdf + "_OmegaYieldvsdNdeta.pdf");
+  canvasYieldvsdNdeta->SaveAs(stringoutpdf + "_OmegaYieldvsdNdeta.png");
 
   // Yield/Yield MB vs dNdeta/dNdeta MB
   TCanvas *canvasYieldvsdNdetaToMB = new TCanvas("canvasYieldvsdNdetaToMB", "canvasYieldvsdNdetaToMB", 1500, 1500);
@@ -545,6 +546,9 @@ void FinalYieldvsMult(
   ghistoYieldSistToMB->SetFillColor(ColorDiff);
   ghistoYieldSistToMB->Draw("same p2");
   ghistoYieldToMB->Draw("same e");
+
+  canvasYieldvsdNdetaToMB->SaveAs(stringoutpdf + "_OmegaYieldvsdNdetaToMB.pdf");
+  canvasYieldvsdNdetaToMB->SaveAs(stringoutpdf + "_OmegaYieldvsdNdetaToMB.png");
 
   // Ratio between fit functions
   TCanvas *canvasRatio = new TCanvas("canvasRatio", "canvasRatio", 1500, 1500);
@@ -675,6 +679,8 @@ void FinalYieldvsMult(
   StyleHistoYield(hYieldPions, 0, 10, 1, 22, SMultType[MultType] + " Multiplicity Percentile", TitleYYieldPtInt, "", 2, 1.15, YoffsetYield);
   // StyleHistoYield(hYieldSistTotalPions, LimInfYield, LimSupYield, 1, 22, SMultType[MultType] + " Multiplicity Percentile", TitleYYieldPtInt, "", 2, 1.15, YoffsetYield);
   hYieldPions->Draw("same");
+  canvasYieldPions->SaveAs(stringoutpdf + "_PionYield.pdf");
+  canvasYieldPions->SaveAs(stringoutpdf + "_PionYield.png");
 
   // Omega over pion ratio
   TCanvas *canvasRatioOmToPi = new TCanvas("canvasRatioOmToPi", "canvasRatioOmToPi", 900, 700);
@@ -685,6 +691,9 @@ void FinalYieldvsMult(
   hYieldRatio->Divide(hYieldPions);
   StyleHistoYield(hYieldRatio, 0, 0.001, 1, 22, SMultType[MultType] + " Multiplicity Percentile", "#Omega / #pion", "", 2, 1.15, 1.2);
   hYieldRatio->Draw("same");
+
+  canvasRatioOmToPi->SaveAs(stringoutpdf + "_RatioOmToPi.pdf");
+  canvasRatioOmToPi->SaveAs(stringoutpdf + "_RatioOmToPi.png");
 
   fileout->Close();
 

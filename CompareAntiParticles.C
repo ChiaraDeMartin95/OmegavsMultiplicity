@@ -16,6 +16,7 @@
 #include "TLegend.h"
 #include "/Users/mbp-cdm-01/Desktop/AssegnoRicerca/Run3Analyses/OmegavsMult/Constants.h"
 #include "ErrRatioCorr.C"
+#include "/Users/mbp-cdm-01/Desktop/AssegnoRicerca/Run3Analyses/OmegavsMult/InputVar.h"
 
 void StyleCanvas(TCanvas *canvas, Float_t LMargin, Float_t RMargin, Float_t TMargin, Float_t BMargin)
 {
@@ -80,18 +81,18 @@ Float_t YUp[numPart] = {0};
 Float_t YLowRatio[numChoice] = {0.98, 0.8, 0.8, 0.6, 0.8, 0.8, 0.8};
 Float_t YUpRatio[numChoice] = {1.02, 1.2, 1.2, 1.4, 1.2, 1.2, 1.2};
 
-void CompareAntiParticles(Int_t Choice = 0,
-                          TString SysPath = "_Train100720" /*"_Sel23June"*/,
+void CompareAntiParticles(Int_t part = 6,
+                          Int_t Choice = 0,
+                          string SysPath = "",
                           TString OutputDir = "Yields",
-                          TString year = "LHC22o_pass4_Train99659" /*"LHC22o_pass4_Train89684" /*"LHC22m_pass4_Train79153"*/,
-                          Int_t part = 6,
-                          Bool_t isBkgParab = 1,
+                          TString year = Extryear,
+                          Bool_t isBkgParab = ExtrisBkgParab,
                           Bool_t isSysStudy = 1,
-                          Int_t MultType = 1, // 0: no mult for backward compatibility, 1: FT0M, 2: FV0M
+                          Int_t MultType = ExtrMultType, // 0: no mult for backward compatibility, 1: FT0M, 2: FV0M
                           Bool_t isMB = 1,
                           Int_t mul = 0,
-                          Bool_t UseTwoGauss = 1,
-                          Int_t evFlag = 1 // 0: INEL - 1; 1: INEL > 0; 2: INEL > 1
+                          Bool_t UseTwoGauss = ExtrUseTwoGauss,
+                          Int_t evFlag = ExtrevFlag // 0: INEL - 1; 1: INEL > 0; 2: INEL > 1
 )
 {
 
@@ -105,6 +106,11 @@ void CompareAntiParticles(Int_t Choice = 0,
     cout << "this value of part is not specified, choose 3 (Xi) or 6 (Omega) " << endl;
     return;
   }
+
+  if (part == 3)
+    SysPath = ExtrSysPathXi;
+  else if (part == 6)
+    SysPath = ExtrSysPathOmega;
 
   TString SPathIn;
   TString SPathInFinal[numParticles];
@@ -187,9 +193,10 @@ void CompareAntiParticles(Int_t Choice = 0,
       SPathIn += Form("_Mult%.1f-%.1f", MultiplicityPerc[mul], MultiplicityPerc[mul + 1]);
     if (Choice == 5)
     {
-      // SPathIn = "Efficiency/eff6June";
-      // SPathIn = "Efficiency/eff_LHC22o_pass4_Sel23June";
-      SPathIn = "Efficiency/eff_LHC22o_pass4_Train100720";
+      if (part == 3)
+        SPathIn = "Efficiency/" + ExtrSPathInEffXi;
+      else if (part == 6)
+        SPathIn = "Efficiency/" + ExtrSPathInEffOmega;
     }
     else if (Choice == 6)
     {
@@ -209,9 +216,8 @@ void CompareAntiParticles(Int_t Choice = 0,
     if (Choice != 5)
       SPathIn += "_" + EventType[evFlag];
     SPathInFinal[ifile] = SPathIn;
-    // if (Choice != 6 && Choice != 5)
-    // SPathInFinal[ifile] += "_FewPtBins";
-    SPathInFinal[ifile] += ".root";
+    if (Choice != 5)
+      SPathInFinal[ifile] += ".root";
 
     cout << "Getting file..." << SPathInFinal[ifile] << endl;
     filein[ifile] = new TFile(SPathInFinal[ifile], "");
@@ -257,14 +263,14 @@ void CompareAntiParticles(Int_t Choice = 0,
     TString dirName = "";
     if (SysPath == "_Sel23June")
       dirName = "effCascade";
-    else if (SysPath == "_Train100720")
+    else if (SysPath == "_Train100720" || SysPath.find("_Train109") != string::npos || SysPath.find("_Train110") != string::npos)
       dirName = "effAcc";
     else
       dirName = "effOmega";
     if (Choice == 5)
     {
       TDirectoryFile *dir = (TDirectoryFile *)filein[ifile]->Get(dirName);
-      if (SysPath == "_Sel23June" || SysPath == "_Train100720")
+      if (SysPath == "_Sel23June" || SysPath == "_Train100720" || SysPath.find("_Train109") != string::npos || SysPath.find("_Train110") != string::npos)
         inputName += "hEffCasc";
       else
         inputName = "hEffOmega";
@@ -292,19 +298,6 @@ void CompareAntiParticles(Int_t Choice = 0,
     histoRatio[ifile] = (TH1F *)histo[ifile]->Clone(Form("hRatio_%i", ifile));
     histoRatio[ifile]->Divide(histoParticle);
     // ErrRatioCorr(histo[ifile], histoParticle, histoRatio[ifile], 1);
-
-    for (Int_t b = 1; b <= histoRatio[ifile]->GetNbinsX(); b++)
-    {
-      // if (Choice == 5)
-      // histo[ifile]->SetBinError(b, 0);
-      // if (Choice == 5)
-      // histoParticle->SetBinError(b, 0);
-      // if (Choice == 5)
-      // histoRatio[ifile]->SetBinError(b, 0);
-      // cout << "Num: " << histo->GetBinContent(b) << endl;
-      // cout << "Denom " << histoParticle->GetBinContent(b) << endl;
-      // cout << "Ratio " << histoRatio->GetBinContent(b) << endl;
-    }
 
     if (Choice == 3 || Choice == 6)
     {
@@ -334,10 +327,12 @@ void CompareAntiParticles(Int_t Choice = 0,
     histoRatio[ifile]->GetYaxis()->SetLabelSize(0.08);
     histoRatio[ifile]->GetYaxis()->SetTitleSize(0.08);
     histoRatio[ifile]->GetYaxis()->SetTitleOffset(0.8);
+    histoRatio[ifile]->GetXaxis()->SetRangeUser(MinBinPt[part], MaxBinPt[part]);
 
     canvas->cd();
     pad1->Draw();
     pad1->cd();
+    histo[ifile]->GetXaxis()->SetRangeUser(MinBinPt[part], MaxBinPt[part]);
     histo[ifile]->Draw("same");
     if (Choice == 0)
       lineMass->DrawClone("same");

@@ -115,7 +115,7 @@ void StylePad(TPad *pad, Float_t LMargin, Float_t RMargin, Float_t TMargin, Floa
 
 void CompareYieldFitF(
     Int_t part = 8,
-    TString SysPath = ExtrSysPath,
+    TString SysPath = "",
     TString OutputDir = "CompareFitFunctions/",
     TString year = Extryear,
     Bool_t isBkgParab = ExtrisBkgParab,
@@ -125,6 +125,11 @@ void CompareYieldFitF(
     Int_t evFlag = ExtrevFlag // 0: INEL - 1; 1: INEL > 0; 2: INEL > 1
 )
 {
+
+  if (part == 3 || part == 4 || part == 5)
+    SysPath = ExtrSysPathXi;
+  else if (part == 6 || part == 7 || part == 8)
+    SysPath = ExtrSysPathOmega;
 
   // multiplicity related variables
   TString Smolt[numMult + 1];

@@ -124,16 +124,21 @@ void StylePad(TPad *pad, Float_t LMargin, Float_t RMargin, Float_t TMargin, Floa
 void FinalYieldvsMult(
     Int_t dNdEtaFlag = 1,
     Int_t part = 8,
-    TString SysPath = ExtrSysPath,
+    TString SysPath = "",
     Bool_t isBkgParab = ExtrisBkgParab,
     TString OutputDir = "PtIntegratedYields/",
-    TString year = Extryear, 
+    TString year = Extryear,
     Bool_t isSysStudy = 1,
     Int_t MultType = ExtrMultType, // 0: no mult for backward compatibility, 1: FT0M, 2: FV0A
     Bool_t UseTwoGauss = ExtrUseTwoGauss,
     Int_t evFlag = ExtrevFlag // 0: INEL - 1; 1: INEL > 0; 2: INEL > 1
 )
 {
+
+  if (part == 3 || part == 4 || part == 5)
+    SysPath = ExtrSysPathXi;
+  else if (part == 6 || part == 7 || part == 8)
+    SysPath = ExtrSysPathOmega;
 
   // multiplicity related variables
   TString Smolt[numMult + 1];
@@ -189,7 +194,7 @@ void FinalYieldvsMult(
   legendfitSummary->SetTextSize(0.04);
   legendfitSummary->SetTextAlign(13);
 
-  TLegend * legendErrorSummary = new TLegend(0.23, 0.75, 0.42, 0.93);
+  TLegend *legendErrorSummary = new TLegend(0.23, 0.75, 0.42, 0.93);
   legendErrorSummary->SetFillStyle(0);
   legendErrorSummary->SetTextSize(0.04);
   legendErrorSummary->SetTextAlign(13);
@@ -284,7 +289,7 @@ void FinalYieldvsMult(
   StyleHistoYield(hYieldPubSist, LimInfYield, LimSupYield, kAzure + 7, 33, SMultType[MultType] + " Multiplicity Percentile", TitleYYieldPtInt, "", 2, 1.15, YoffsetYield);
 
   StyleHistoYield(hYieldSistRelTotal, 0, 0.3, 1, 22, SMultType[MultType] + " Multiplicity Percentile", "Rel. error", "", 2, 1.15, YoffsetYield);
-  StyleHistoYield(hYieldSistRelTopoSel, 0, 0.3, kGreen+2, 22, SMultType[MultType] + " Multiplicity Percentile", "Rel. error", "", 2, 1.15, YoffsetYield);
+  StyleHistoYield(hYieldSistRelTopoSel, 0, 0.3, kGreen + 2, 22, SMultType[MultType] + " Multiplicity Percentile", "Rel. error", "", 2, 1.15, YoffsetYield);
   StyleHistoYield(hYieldSistRelFitChoice, 0, 0.3, kViolet, 22, SMultType[MultType] + " Multiplicity Percentile", "Rel. error", "", 2, 1.15, YoffsetYield);
 
   LegendPub->AddEntry(hYieldPubSist, "Eur.Phys.J.C 80 (2020) 167, 2020", "pl");

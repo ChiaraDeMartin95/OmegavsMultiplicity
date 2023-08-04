@@ -23,6 +23,7 @@
 #include "TGraphAsymmErrors.h"
 #include "Constants.h"
 #include "ErrRatioCorr.C"
+#include "/Users/mbp-cdm-01/Desktop/AssegnoRicerca/Run3Analyses/OmegavsMult/InputVar.h"
 
 void StyleHisto(TH1F *histo, Float_t Low, Float_t Up, Int_t color, Int_t style, TString TitleX, TString TitleY, TString title)
 {
@@ -111,32 +112,36 @@ void StylePad(TPad *pad, Float_t LMargin, Float_t RMargin, Float_t TMargin, Floa
 // take spectra in input
 // produces ratio of spectra wrt 0-100% multiplciity class
 
-Float_t YLowMean[numPart] = {0.485, 1.110, 1.110, 1.316, 1.316, 1.316, 1.66, 1.66, 1.66};
+Float_t YLowMean[numPart] = {0.485, 1.110, 1.110, 1.31, 1.31, 1.31, 1.66, 1.66, 1.66};
 Float_t YUpMean[numPart] = {0.51, 1.130, 1.130, 1.327, 1.327, 1.327, 1.68, 1.68, 1.68};
-Float_t YLowSigma[numPart] = {0.0002, 0.0002, 0.0002, 0.0002, 0.0002, 0.0002, 0.0, 0.0, 0.0};
-Float_t YUpSigma[numPart] = {0.025, 0.015, 0.015, 0.015, 0.015, 0.015, 0.008, 0.008, 0.008};
-Float_t YLowPurity[numPart] = {0, 0, 0, 0, 0, 0, 0, 0, 0};
+Float_t YLowSigma[numPart] = {0.0002, 0.0002, 0.0002, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+Float_t YUpSigma[numPart] = {0.025, 0.015, 0.015, 0.008, 0.0008, 0.008, 0.008, 0.008, 0.008};
+Float_t YLowPurity[numPart] = {0, 0, 0, 0, 0, 0, 0.15, 0.15, 0.15};
 
 Float_t YLow[numPart] = {0};
 Float_t YUp[numPart] = {0};
 
-Float_t YLowRatio[numChoice] = {0.99, 0.4, 0.8, 0, 0.8, 0.8, 0.8};
+Float_t YLowRatio[numChoice] = {0.99, 0.4, 0.8, 0.1, 0.8, 0.8, 0.8};
 Float_t YUpRatio[numChoice] = {1.01, 1.6, 1.2, 8, 1.2, 1.2, 1.2};
 
 void MeanSigmaPurityMultRatio(Int_t part = 6,
                               Int_t ChosenMult = numMult,
                               Int_t Choice = 0,
-                              Bool_t isBkgParab = 1,
-                              TString SysPath = "_Train100720" /*"_Sel23June" /*"_Sel6June"*/,
+                              Bool_t isBkgParab = ExtrisBkgParab,
+                              TString SysPath = "",
                               TString OutputDir = "MeanSigmaPurityMultClasses/",
-                              TString year = "LHC22o_pass4_Train99659"/*"LHC22o_pass4_Train89684" /*"LHC22m_pass4_Train79153"*/,
+                              TString year = Extryear,
                               Bool_t isSysStudy = 1,
-                              Int_t MultType = 1, // 0: no mult for backward compatibility, 1: FT0M, 2: FV0A
-                              Bool_t UseTwoGauss = 1,
-                              Int_t evFlag = 1 // 0: INEL - 1; 1: INEL > 0; 2: INEL > 1
+                              Int_t MultType = ExtrMultType, // 0: no mult for backward compatibility, 1: FT0M, 2: FV0A
+                              Bool_t UseTwoGauss = ExtrUseTwoGauss,
+                              Int_t evFlag = ExtrevFlag // 0: INEL - 1; 1: INEL > 0; 2: INEL > 1
 )
 {
 
+  if (part == 3 || part == 4 || part == 5)
+    SysPath = ExtrSysPathXi;
+  else if (part == 6 || part == 7 || part == 8)
+    SysPath = ExtrSysPathOmega;
   gStyle->SetOptStat(0);
   if (ChosenMult > numMult)
   {
@@ -168,6 +173,7 @@ void MeanSigmaPurityMultRatio(Int_t part = 6,
   {
     YLow[part] = 1e-9;
     YUp[part] = 100;
+    if (part==3 || part==4 || part==5) YUp[part] = 10000;
   }
   // multiplicity related variables
   TString Smolt[numMult + 1];

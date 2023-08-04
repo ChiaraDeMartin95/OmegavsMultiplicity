@@ -23,6 +23,7 @@
 #include "TGraphAsymmErrors.h"
 #include "Constants.h"
 #include "ErrRatioCorr.C"
+#include "/Users/mbp-cdm-01/Desktop/AssegnoRicerca/Run3Analyses/OmegavsMult/InputVar.h"
 
 void StyleHisto(TH1F *histo, Float_t Low, Float_t Up, Int_t color, Int_t style, TString TitleX, TString TitleY, TString title)
 {
@@ -113,14 +114,14 @@ void StylePad(TPad *pad, Float_t LMargin, Float_t RMargin, Float_t TMargin, Floa
 
 void PlotSpectraRatios(Int_t part = 8,
                        Int_t ChosenMult = numMult,
-                       TString SysPath = "_Train100720" /*"_Sel23June" /*"_Sel6June"*/,
+                       TString SysPath = "",
                        TString OutputDir = "PtSpectraMultClasses/",
-                       Bool_t isBkgParab = 1,
-                       TString year = "LHC22o_pass4_Train99659" /*"LHC22o_pass4_Train89684" /*"LHC22m_pass4_Train79153"*/,
+                       Bool_t isBkgParab = ExtrisBkgParab,
+                       TString year = Extryear,
                        Bool_t isSysStudy = 1,
-                       Int_t MultType = 1, // 0: no mult for backward compatibility, 1: FT0M, 2: FV0A
-                       Bool_t UseTwoGauss = 1,
-                       Int_t evFlag = 1 // 0: INEL - 1; 1: INEL > 0; 2: INEL > 1
+                       Int_t MultType = ExtrMultType, // 0: no mult for backward compatibility, 1: FT0M, 2: FV0A
+                       Bool_t UseTwoGauss = ExtrUseTwoGauss,
+                       Int_t evFlag = ExtrevFlag // 0: INEL - 1; 1: INEL > 0; 2: INEL > 1
 )
 {
 
@@ -130,6 +131,10 @@ void PlotSpectraRatios(Int_t part = 8,
     cout << "Chosen Mult outside of available range" << endl;
     return;
   }
+  if (part == 3 || part == 4 || part == 5)
+    SysPath = ExtrSysPathXi;
+  else if (part == 6 || part == 7 || part == 8)
+    SysPath = ExtrSysPathOmega;
 
   // multiplicity related variables
   TString Smolt[numMult + 1];
@@ -268,6 +273,7 @@ void PlotSpectraRatios(Int_t part = 8,
   // draw spectra in multiplicity classes
   // Float_t LimSupSpectra = 9.99;
   Float_t LimSupSpectra = 9999.99;
+  if (part>=3 && part<=5) LimSupSpectra = 99999.99;
   Float_t LimInfSpectra = 0.2 * 1e-7;
   Float_t xTitle = 15;
   Float_t xOffset = 4;

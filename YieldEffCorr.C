@@ -199,14 +199,15 @@ void YieldEffCorr(Int_t part = 8,
   }
 
   histoYieldCorr = (TH1F *)histoYield->Clone("histoYieldCorr");
-  // histoYieldCorr->Divide(histoEff);
 
   Float_t RelErr = 0;
   for (Int_t i = 1; i <= histoYield->GetNbinsX(); i++)
   {
+    if (part>=6 && part<=8 && histoYield->GetXaxis()->GetBinLowEdge(i) < MinBinPt[part])
+      continue;
     cout << "\npt: " << histoYield->GetBinCenter(i) << endl;
     cout << histoYield->GetBinContent(i) << " +- " << histoYield->GetBinError(i) << endl;
-    cout << histoEff->GetBinContent(i) << " +- " << histoEff->GetBinError(i) << endl;
+    cout << histoEff->GetBinContent(histoEff->FindBin(histoYield->GetBinCenter(i))) << " +- " << histoEff->GetBinError(histoEff->FindBin(histoYield->GetBinCenter(i))) << endl;
     cout << histoYieldCorr->GetBinContent(i) << " +- " << histoYieldCorr->GetBinError(i) << endl;
     histoYieldCorr->SetBinContent(i, histoYield->GetBinContent(i) / histoEff->GetBinContent(histoEff->FindBin(histoYield->GetBinCenter(i))));
     RelErr = sqrt(pow(histoYield->GetBinError(i) / histoYield->GetBinContent(i), 2) + pow(histoEff->GetBinError(histoEff->FindBin(histoYield->GetBinCenter(i))) / histoEff->GetBinContent(histoEff->FindBin(histoYield->GetBinCenter(i))), 2));
@@ -336,8 +337,10 @@ void YieldEffCorr(Int_t part = 8,
   TCanvas *canvasComp = new TCanvas("canvasComp" + Spart[part], "canvasComp" + Spart[part], 1000, 800);
   StyleCanvas(canvasComp, 0.15, 0.05, 0.05, 0.15);
   canvasComp->cd();
-  histoPubFinal->Draw("same");
+  histoYieldCorr->GetYaxis()->SetRangeUser(0, 1.3 * histoPubFinal->GetBinContent(histoPubFinal->GetMaximumBin()));
+  histoYieldCorr->GetXaxis()->SetRangeUser(MinBinPt[part], MaxBinPt[part]);
   histoYieldCorr->Draw("same");
+  histoPubFinal->Draw("same");
   if (isMB == 1)
   {
     canvasComp->SaveAs(Sfileout + "_CompPub.pdf");
@@ -346,6 +349,7 @@ void YieldEffCorr(Int_t part = 8,
 
   TFile *fileout = new TFile(Sfileout + ".root", "RECREATE");
   histoYieldCorr->Write();
+  fileout->Close();
 
   cout << "\nA partire dal file: \n"
        << SPathIn << " per lo yield raw\n e dal file: " << SPathInEffFinal << " per l'efficienza, \nho creato il file: " << Sfileout << ".pdf and .png and .root" << endl;

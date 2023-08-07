@@ -203,7 +203,7 @@ void YieldEffCorr(Int_t part = 8,
   Float_t RelErr = 0;
   for (Int_t i = 1; i <= histoYield->GetNbinsX(); i++)
   {
-    if (part>=6 && part<=8 && histoYield->GetXaxis()->GetBinLowEdge(i) < MinBinPt[part])
+    if (part >= 6 && part <= 8 && histoYield->GetXaxis()->GetBinLowEdge(i) < MinBinPt[part])
       continue;
     cout << "\npt: " << histoYield->GetBinCenter(i) << endl;
     cout << histoYield->GetBinContent(i) << " +- " << histoYield->GetBinError(i) << endl;
@@ -230,6 +230,75 @@ void YieldEffCorr(Int_t part = 8,
     histoYieldCorr->SetBinContent(i, histoYield->GetBinContent(i) / histoEff->GetBinContent(histoEff->FindBin(histoYield->GetBinCenter(i))));
   }
   */
+
+  // EVENT NORMALISATION CORRECTION
+  TFile *fileinNormMB = new TFile(SfileinNormMB, "");
+  TFile *fileinNorm = new TFile(SfileinNorm, "");
+  TH1F *histoYieldCorrELCorr = (TH1F *)histoYieldCorr->Clone("histoYieldCorrELCorr");
+  if (!fileinNorm)
+  {
+    cout << "No normalisation file" << endl;
+    return;
+  }
+  if (!fileinNormMB)
+  {
+    cout << "No normalisation file" << endl;
+    return;
+  }
+  TCanvas *cNormMB = (TCanvas *)fileinNormMB->Get("canvasEventCorr");
+  if (!cNormMB)
+  {
+    cout << "No normalisation canvas" << endl;
+    return;
+  }
+  TH1F *histoNormMB = (TH1F *)cNormMB->GetPrimitive("eventCorr");
+  if (!histoNormMB)
+  {
+    cout << "No normalisation histo MB" << endl;
+    return;
+  }
+  histoNormMB->SetName("histoNormMB");
+  TCanvas *cNorm = (TCanvas *)fileinNorm->Get("canvasEventCorr");
+  if (!cNorm)
+  {
+    cout << "No normalisation canvas" << endl;
+    return;
+  }
+  TH1F *histoNorm = (TH1F *)cNorm->GetPrimitive("eventCorr");
+  if (!histoNorm)
+  {
+    cout << "No normalisation histo" << endl;
+    return;
+  }
+  histoNorm->SetName("histoNormMB");
+
+  Float_t Err = 0;
+  Float_t ErrEL = histoNorm->GetBinError(histoNorm->FindBin(MultiplicityPerc[mul] + 0.0001)) / histoNorm->GetBinContent(histoNorm->FindBin(MultiplicityPerc[mul] + 0.0001));
+  Float_t ErrELMB = histoNormMB->GetBinError(1) / histoNormMB->GetBinContent(1);
+  for (Int_t i = 1; i <= histoYieldCorrELCorr->GetNbinsX(); i++)
+  {
+    if (histoYieldCorrELCorr->GetXaxis()->GetBinLowEdge(i) < MinBinPt[part])
+      continue;
+    Err = histoYieldCorrELCorr->GetBinError(i) / histoYieldCorrELCorr->GetBinContent(i);
+    if (isMB == 1)
+    {
+      histoYieldCorrELCorr->SetBinContent(i, histoYieldCorrELCorr->GetBinContent(i) * histoNormMB->GetBinContent(1));
+      histoYieldCorrELCorr->SetBinError(i, sqrt(pow(Err, 2) + pow(ErrELMB, 2)) * histoYieldCorrELCorr->GetBinContent(i));
+      cout << "Norm factor: " << histoNormMB->GetBinContent(1) << endl;
+      cout << histoYieldCorr->GetBinContent(i) << " +- " << histoYieldCorr->GetBinError(i) << endl;
+      cout << histoYieldCorrELCorr->GetBinContent(i) << " +- " << histoYieldCorrELCorr->GetBinError(i) << endl;
+      cout << histoYieldCorrELCorr->GetBinContent(i) / histoYieldCorr->GetBinContent(i) << endl;
+    }
+    else
+    {
+      histoYieldCorrELCorr->SetBinContent(i, histoYieldCorrELCorr->GetBinContent(i) * histoNorm->GetBinContent(histoNorm->FindBin(MultiplicityPerc[mul] + 0.0001)));
+      histoYieldCorrELCorr->SetBinError(i, sqrt(pow(Err, 2) + pow(ErrEL, 2)) * histoYieldCorrELCorr->GetBinContent(i));
+      cout << "Norm factor: " << histoNorm->GetBinContent(mul + 1) << endl;
+      cout << histoYieldCorrELCorr->GetBinContent(i) / histoYieldCorr->GetBinContent(i) << endl;
+    }
+  }
+
+  // SIGNAL LOSS CORRECTION
 
   Int_t partC = 0;
   if (part == 3 || part == 6)
@@ -349,6 +418,7 @@ void YieldEffCorr(Int_t part = 8,
 
   TFile *fileout = new TFile(Sfileout + ".root", "RECREATE");
   histoYieldCorr->Write();
+  histoYieldCorrELCorr->Write();
   fileout->Close();
 
   cout << "\nA partire dal file: \n"

@@ -356,7 +356,6 @@ void FinalYieldvsMult(
   Float_t OmegaToPionErrorsStat[numMult + 1] = {0};
   Float_t OmegaToPionErrorsSist[numMult + 1] = {0};
   Float_t OmegaToPion[numMult + 1] = {0};
-  
 
   for (Int_t i = 0; i < numMult; i++)
   {
@@ -371,7 +370,7 @@ void FinalYieldvsMult(
     }
     else if (dNdEtaFlag == 1)
     { // Run3 Nicolò estimate
-      dNdEta[i] = dNdEtaRun3[i];
+      dNdEta[i] = dNdEtaRun3[i] / AdjustFactordNdeta;
       dNdEtaErrorL[i] = dNdEtaRun3ErrorL[i];
       dNdEtaErrorR[i] = dNdEtaRun3ErrorR[i];
     }
@@ -448,7 +447,7 @@ void FinalYieldvsMult(
   Int_t MarkerType = 20;
   Float_t MarkerSize = 1.5;
   Int_t LineStyle = 1;
-  Float_t UpperValueX = 35;
+  Float_t UpperValueX = 25;
   Float_t Up = 0.025;
   Float_t Low = 1e-4;
 
@@ -721,6 +720,40 @@ void FinalYieldvsMult(
   canvasRatioOmToPi->SaveAs(stringoutpdf + "_RatioOmToPi.png");
 
   // Omega over pion vs multiplicity
+
+  // Ropes
+  TFile *fileRopes = new TFile("MCPredictions/Results_Ropes_V0M_13TeV.root", "");
+  TDirectoryFile *dirRopes = (TDirectoryFile *)fileRopes->Get("MB");
+  TDirectoryFile *dirRopes2 = (TDirectoryFile *)dirRopes->Get("YieldRatioToPions");
+  TGraphErrors *OmegaToPionsRopes = (TGraphErrors *)dirRopes2->Get("YieldRatioToPions_VsNch_OmegaMinusOmegaPlus");
+  OmegaToPionsRopes->SetName("OmegaToPionsRopes");
+  OmegaToPionsRopes->SetMarkerStyle(20);
+  OmegaToPionsRopes->SetMarkerSize(1.5);
+  OmegaToPionsRopes->SetMarkerColor(ColorModel[1]);
+  OmegaToPionsRopes->SetLineColor(ColorModel[1]);
+  OmegaToPionsRopes->SetLineStyle(1);
+  OmegaToPionsRopes->SetLineWidth(2);
+  // Monash
+  TFile *fileMonash = new TFile("MCPredictions/Results_Monash_V0M_13TeV.root", "");
+  TDirectoryFile *dirMonash = (TDirectoryFile *)fileMonash->Get("MB");
+  TDirectoryFile *dirMonash2 = (TDirectoryFile *)dirMonash->Get("YieldRatioToPions");
+  TGraphErrors *OmegaToPionsMonash = (TGraphErrors *)dirMonash2->Get("YieldRatioToPions_VsNch_OmegaMinusOmegaPlus");
+  OmegaToPionsMonash->SetName("OmegaToPionsMonash");
+  OmegaToPionsMonash->SetMarkerStyle(20);
+  OmegaToPionsMonash->SetMarkerSize(1.5);
+  OmegaToPionsMonash->SetMarkerColor(ColorModel[0]);
+  OmegaToPionsMonash->SetLineColor(ColorModel[0]);
+  OmegaToPionsMonash->SetLineStyle(1);
+  OmegaToPionsMonash->SetLineWidth(2);
+
+  TLegend *legendModel = new TLegend(0.7, 0.8, 0.8, 0.9);
+
+  legendModel->AddEntry(OmegaToPionsRopes, "Pythia 8 Ropes", "lp");
+  legendModel->AddEntry(OmegaToPionsMonash, "Pythia 8 Monash", "lp");
+  legendModel->SetFillStyle(0);
+  legendModel->SetTextSize(0.04);
+    
+
   TCanvas *canvasOmToPionvsdNdeta = new TCanvas("canvasOmToPionvsdNdeta", "canvasOmToPionvsdNdeta", 1500, 1500);
   StyleCanvas(canvasOmToPionvsdNdeta, 0.02, 0.15, 0.1, 0.02);
   histoYieldDummy->GetXaxis()->SetTitle(TitleXMult);
@@ -733,8 +766,8 @@ void FinalYieldvsMult(
   {
     cout << "dNdeta  " << dNdEta[i] << endl;
     OmegaToPion[i] = Yields[i] / hYieldPions->GetBinContent(i + 1);
-    OmegaToPionErrorsStat[i] = OmegaToPion[i] * sqrt(pow(YieldsErrorsStat[i] / Yields[i], 2) + pow(hYieldPions->GetBinError(i + 1)/hYieldPions->GetBinContent(i + 1), 2));
-    OmegaToPionErrorsSist[i] = OmegaToPion[i] * sqrt(pow(YieldsErrorsSist[i] / Yields[i], 2) + pow(YieldsErrorsSist[i] / Yields[i],2));
+    OmegaToPionErrorsStat[i] = OmegaToPion[i] * sqrt(pow(YieldsErrorsStat[i] / Yields[i], 2) + pow(hYieldPions->GetBinError(i + 1) / hYieldPions->GetBinContent(i + 1), 2));
+    OmegaToPionErrorsSist[i] = OmegaToPion[i] * sqrt(pow(YieldsErrorsSist[i] / Yields[i], 2) + pow(YieldsErrorsSist[i] / Yields[i], 2));
     cout << "Omega / Pion " << OmegaToPion[i] << endl;
   }
   TGraphAsymmErrors *ghistoYieldOmegaToPion;
@@ -748,8 +781,12 @@ void FinalYieldvsMult(
   ghistoYieldSistOmegaToPion->SetFillColor(ColorDiff);
   ghistoYieldSistOmegaToPion->Draw("same p2");
   ghistoYieldOmegaToPion->Draw("same e");
+  OmegaToPionsMonash->Draw("same l");
+  OmegaToPionsRopes->Draw("same l");
+
   LegendTitleLeft->Draw();
   LegendPubLeft->Draw("");
+  legendModel->Draw("");
 
   canvasOmToPionvsdNdeta->SaveAs(stringoutpdf + "_RatioOmToPidNdeta.pdf");
   canvasOmToPionvsdNdeta->SaveAs(stringoutpdf + "_RatioOmToPidNdeta.png");

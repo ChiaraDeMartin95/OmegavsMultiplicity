@@ -184,10 +184,23 @@ void FinalYieldvsMult(
   LegendTitle->AddEntry("", "pp, #sqrt{#it{s}} = 13.6 TeV", "");
   LegendTitle->AddEntry("", NamePart[part] + ", |y| < 0.5", "");
 
+  TLegend *LegendTitleLeft = new TLegend(0.06, 0.75, 0.47, 0.92);
+  LegendTitleLeft->SetFillStyle(0);
+  LegendTitleLeft->SetTextAlign(13);
+  LegendTitleLeft->SetTextSize(0.04);
+  LegendTitleLeft->AddEntry("", "#bf{ALICE Work In Progress}", "");
+  LegendTitleLeft->AddEntry("", "pp, #sqrt{#it{s}} = 13.6 TeV", "");
+  LegendTitleLeft->AddEntry("", NamePart[part] + ", |y| < 0.5", "");
+
   TLegend *LegendPub = new TLegend(0.58, 0.65, 0.95, 0.73);
   LegendPub->SetFillStyle(0);
   LegendPub->SetTextAlign(32);
   LegendPub->SetTextSize(0.025);
+
+  TLegend *LegendPubLeft = new TLegend(0.14, 0.65, 0.53, 0.73);
+  LegendPubLeft->SetFillStyle(0);
+  LegendPubLeft->SetTextAlign(12);
+  LegendPubLeft->SetTextSize(0.025);
 
   TLegend *legendfitSummary = new TLegend(0.23, 0.75, 0.42, 0.93);
   legendfitSummary->SetFillStyle(0);
@@ -293,6 +306,7 @@ void FinalYieldvsMult(
   StyleHistoYield(hYieldSistRelFitChoice, 0, 0.3, kViolet, 22, SMultType[MultType] + " Multiplicity Percentile", "Rel. error", "", 2, 1.15, YoffsetYield);
 
   LegendPub->AddEntry(hYieldPubSist, "Eur.Phys.J.C 80 (2020) 167, 2020", "pl");
+  LegendPubLeft->AddEntry(hYieldPubSist, "pp, #sqrt{s} = 13 TeV, Eur.Phys.J.C 80 (2020) 167, 2020", "pl");
 
   canvasYield->cd();
   hYieldSistTotal->SetFillStyle(0);
@@ -339,6 +353,10 @@ void FinalYieldvsMult(
   Float_t YieldsToMB[numMult + 1] = {0};
   Float_t YieldsErrorsSistToMB[numMult + 1] = {0};
   Float_t YieldsErrorsStatToMB[numMult + 1] = {0};
+  Float_t OmegaToPionErrorsStat[numMult + 1] = {0};
+  Float_t OmegaToPionErrorsSist[numMult + 1] = {0};
+  Float_t OmegaToPion[numMult + 1] = {0};
+  
 
   for (Int_t i = 0; i < numMult; i++)
   {
@@ -551,6 +569,8 @@ void FinalYieldvsMult(
   ghistoYieldSistToMB->SetFillColor(ColorDiff);
   ghistoYieldSistToMB->Draw("same p2");
   ghistoYieldToMB->Draw("same e");
+  LegendTitleLeft->Draw();
+  LegendPubLeft->Draw("");
 
   canvasYieldvsdNdetaToMB->SaveAs(stringoutpdf + "_OmegaYieldvsdNdetaToMB.pdf");
   canvasYieldvsdNdetaToMB->SaveAs(stringoutpdf + "_OmegaYieldvsdNdetaToMB.png");
@@ -700,6 +720,39 @@ void FinalYieldvsMult(
   canvasRatioOmToPi->SaveAs(stringoutpdf + "_RatioOmToPi.pdf");
   canvasRatioOmToPi->SaveAs(stringoutpdf + "_RatioOmToPi.png");
 
+  // Omega over pion vs multiplicity
+  TCanvas *canvasOmToPionvsdNdeta = new TCanvas("canvasOmToPionvsdNdeta", "canvasOmToPionvsdNdeta", 1500, 1500);
+  StyleCanvas(canvasOmToPionvsdNdeta, 0.02, 0.15, 0.1, 0.02);
+  histoYieldDummy->GetXaxis()->SetTitle(TitleXMult);
+  histoYieldDummy->GetYaxis()->SetTitle("#Omega / #pi");
+  histoYieldDummy->GetXaxis()->SetRangeUser(0, UpperValueX);
+  histoYieldDummy->GetYaxis()->SetRangeUser(0, 0.0015);
+  histoYieldDummy->DrawClone("");
+
+  for (Int_t i = 0; i < numMult; i++)
+  {
+    cout << "dNdeta  " << dNdEta[i] << endl;
+    OmegaToPion[i] = Yields[i] / hYieldPions->GetBinContent(i + 1);
+    OmegaToPionErrorsStat[i] = OmegaToPion[i] * sqrt(pow(YieldsErrorsStat[i] / Yields[i], 2) + pow(hYieldPions->GetBinError(i + 1)/hYieldPions->GetBinContent(i + 1), 2));
+    OmegaToPionErrorsSist[i] = OmegaToPion[i] * sqrt(pow(YieldsErrorsSist[i] / Yields[i], 2) + pow(YieldsErrorsSist[i] / Yields[i],2));
+    cout << "Omega / Pion " << OmegaToPion[i] << endl;
+  }
+  TGraphAsymmErrors *ghistoYieldOmegaToPion;
+  TGraphAsymmErrors *ghistoYieldSistOmegaToPion;
+  ghistoYieldOmegaToPion = new TGraphAsymmErrors(numMult, dNdEta, OmegaToPion, 0, 0, OmegaToPionErrorsStat, OmegaToPionErrorsStat);
+  ghistoYieldSistOmegaToPion = new TGraphAsymmErrors(numMult, dNdEta, OmegaToPion, dNdEtaErrorL, dNdEtaErrorR, OmegaToPionErrorsSist, OmegaToPionErrorsSist);
+  StyleTGraphErrors(ghistoYieldOmegaToPion, ColorDiff, MarkerType, MarkerSize, LineStyle);
+  StyleTGraphErrors(ghistoYieldSistOmegaToPion, ColorDiff, MarkerType, MarkerSize, LineStyle);
+  ghistoYieldOmegaToPion->SetFillColor(ColorDiff);
+  ghistoYieldSistOmegaToPion->SetFillStyle(0);
+  ghistoYieldSistOmegaToPion->SetFillColor(ColorDiff);
+  ghistoYieldSistOmegaToPion->Draw("same p2");
+  ghistoYieldOmegaToPion->Draw("same e");
+  LegendTitleLeft->Draw();
+  LegendPubLeft->Draw("");
+
+  canvasOmToPionvsdNdeta->SaveAs(stringoutpdf + "_RatioOmToPidNdeta.pdf");
+  canvasOmToPionvsdNdeta->SaveAs(stringoutpdf + "_RatioOmToPidNdeta.png");
   fileout->Close();
 
   cout << "\nStarting from the files (for the different fit types): " << PathIn << endl;

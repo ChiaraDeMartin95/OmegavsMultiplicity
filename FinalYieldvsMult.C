@@ -120,6 +120,7 @@ void StylePad(TPad *pad, Float_t LMargin, Float_t RMargin, Float_t TMargin, Floa
 
 // take spectra in input
 // fits them to get pt-integrated yields
+const Int_t numMultMB = 1;
 
 void FinalYieldvsMult(
     Int_t dNdEtaFlag = 1,
@@ -139,6 +140,84 @@ void FinalYieldvsMult(
     SysPath = ExtrSysPathXi;
   else if (part == 6 || part == 7 || part == 8)
     SysPath = ExtrSysPathOmega;
+
+  gStyle->SetOptStat(0);
+  gStyle->SetLegendFillColor(0);
+  gStyle->SetLegendBorderSize(0);
+
+  //************GET PUBLISHED RESULTS******************
+
+  // get published yields vs mult (paper: Eur.Phys.J.C 80 (2020) 167, 2020)
+  TString SfileNamePub = "";
+  TString STable = "";
+  TString Shisto = "";
+  if (part == 5)
+  {
+    SfileNamePub = "PublishedYield13TeV/HEPData-ins1748157-v1-Table_8c.root";
+    STable = "Table 8c";
+    Shisto = "Hist1D_y3";
+  }
+  else if (part == 8)
+  {
+    SfileNamePub = "PublishedYield13TeV/HEPData-ins1748157-v1-Table_8cO.root";
+    STable = "Table 8cO";
+    Shisto = "Hist1D_y1";
+  }
+  TFile *yieldPub = new TFile(SfileNamePub, "");
+  TDirectoryFile *dirYieldPub = (TDirectoryFile *)yieldPub->Get(STable);
+  TH1F *hYieldvsMultPub = (TH1F *)dirYieldPub->Get(Shisto);
+  TH1F *hYieldvsMultPubStatErr = (TH1F *)dirYieldPub->Get(Shisto + "_e1");
+  TH1F *hYieldvsMultPubSistErr = (TH1F *)dirYieldPub->Get(Shisto + "_e2");
+  TH1F *hYieldvsMultPubStat = (TH1F *)hYieldvsMultPub->Clone("hYieldPubStat");
+  TH1F *hYieldvsMultPubSist = (TH1F *)hYieldvsMultPub->Clone("hYieldPubSist");
+  for (Int_t b = 1; b <= hYieldvsMultPubStat->GetNbinsX(); b++)
+  {
+    hYieldvsMultPubStat->SetBinError(b, hYieldvsMultPubStatErr->GetBinContent(b));
+    hYieldvsMultPubSist->SetBinError(b, hYieldvsMultPubSistErr->GetBinContent(b));
+  }
+  hYieldvsMultPubStat->SetMarkerStyle(20);
+  hYieldvsMultPubStat->SetMarkerColor(kAzure + 7);
+  hYieldvsMultPubStat->SetLineColor(kAzure + 7);
+  hYieldvsMultPubSist->SetMarkerStyle(20);
+  hYieldvsMultPubSist->SetMarkerColor(kAzure + 7);
+  hYieldvsMultPubSist->SetLineColor(kAzure + 7);
+
+  // Published Nature Omega/pion (Xi/pion) (paper: Nature Phys. 13 (2017))
+  TFile *fileNature = new TFile("PublishedYield13TeV/HEPData-ins1471838-v1-Table_39.root", "");
+  TDirectoryFile *dirNature = (TDirectoryFile *)fileNature->Get("Table 39");
+  TH1F *hOmegaToPionsNatureStat = (TH1F *)dirNature->Get("Hist1D_y1");
+  TH1F *hOmegaToPionsNatureSyst = (TH1F *)hOmegaToPionsNatureStat->Clone("hOmegaToPionsNatureSyst");
+  TH1F *hOmegaToPionsNatureStatErr = (TH1F *)dirNature->Get("Hist1D_y1_e1");
+  TH1F *hOmegaToPionsNatureSystErr = (TH1F *)dirNature->Get("Hist1D_y1_e2");
+  for (Int_t i = 0; i < hOmegaToPionsNatureStat->GetNbinsX(); i++)
+  {
+    hOmegaToPionsNatureStat->SetBinError(i + 1, hOmegaToPionsNatureStatErr->GetBinContent(i + 1));
+    hOmegaToPionsNatureSyst->SetBinError(i + 1, hOmegaToPionsNatureSystErr->GetBinContent(i + 1));
+  }
+  hOmegaToPionsNatureStat->SetMarkerStyle(20);
+  hOmegaToPionsNatureStat->SetMarkerColor(kAzure + 7);
+  hOmegaToPionsNatureStat->SetLineColor(kAzure + 7);
+  hOmegaToPionsNatureSyst->SetMarkerStyle(20);
+  hOmegaToPionsNatureSyst->SetMarkerColor(kAzure + 7);
+  hOmegaToPionsNatureSyst->SetLineColor(kAzure + 7);
+
+  TLegend *LegendPub = new TLegend(0.58, 0.65, 0.95, 0.73);
+  LegendPub->SetFillStyle(0);
+  LegendPub->SetTextAlign(32);
+  LegendPub->SetTextSize(0.025);
+
+  TLegend *LegendPubLeft = new TLegend(0.14, 0.65, 0.53, 0.73);
+  LegendPubLeft->SetFillStyle(0);
+  LegendPubLeft->SetTextAlign(12);
+  LegendPubLeft->SetTextSize(0.025);
+
+  TLegend *LegendPubNature = new TLegend(0.14, 0.65, 0.53, 0.73);
+  LegendPubNature->SetFillStyle(0);
+  LegendPubNature->SetTextAlign(12);
+  LegendPubNature->SetTextSize(0.025);
+  LegendPubNature->AddEntry(hOmegaToPionsNatureStat, "pp, #sqrt{s} = 7 TeV, Nature Phys. 13 (2017)", "pl");
+
+  //***************************************************
 
   // multiplicity related variables
   TString Smolt[numMult + 1];
@@ -164,11 +243,6 @@ void FinalYieldvsMult(
   stringout += "_" + EventType[evFlag];
   stringoutpdf = stringout;
   stringout += ".root";
-  TFile *fileout = new TFile(stringout, "RECREATE");
-
-  gStyle->SetOptStat(0);
-  gStyle->SetLegendFillColor(0);
-  gStyle->SetLegendBorderSize(0);
 
   TCanvas *canvasYield = new TCanvas("canvasYield", "canvasYield", 900, 700);
   StyleCanvas(canvasYield, 0.05, 0.15, 0.2, 0.02);
@@ -192,15 +266,15 @@ void FinalYieldvsMult(
   LegendTitleLeft->AddEntry("", "pp, #sqrt{#it{s}} = 13.6 TeV", "");
   LegendTitleLeft->AddEntry("", NamePart[part] + ", |y| < 0.5", "");
 
-  TLegend *LegendPub = new TLegend(0.58, 0.65, 0.95, 0.73);
-  LegendPub->SetFillStyle(0);
-  LegendPub->SetTextAlign(32);
-  LegendPub->SetTextSize(0.025);
+  TLegend *LegendMB = new TLegend(0.74, 0.58, 0.95, 0.68);
+  LegendMB->SetFillStyle(0);
+  LegendMB->SetTextAlign(32);
+  LegendMB->SetTextSize(0.035);
 
-  TLegend *LegendPubLeft = new TLegend(0.14, 0.65, 0.53, 0.73);
-  LegendPubLeft->SetFillStyle(0);
-  LegendPubLeft->SetTextAlign(12);
-  LegendPubLeft->SetTextSize(0.025);
+  TLegend *LegendMBLeft = new TLegend(0.18, 0.55, 0.26, 0.65);
+  LegendMBLeft->SetFillStyle(0);
+  LegendMBLeft->SetTextAlign(12);
+  LegendMBLeft->SetTextSize(0.035);
 
   TLegend *legendfitSummary = new TLegend(0.23, 0.75, 0.42, 0.93);
   legendfitSummary->SetFillStyle(0);
@@ -337,9 +411,9 @@ void FinalYieldvsMult(
   Float_t dNdEta[numMult + 1] = {0};
   Float_t dNdEtaErrorL[numMult + 1] = {0};
   Float_t dNdEtaErrorR[numMult + 1] = {0};
-  Float_t dNdEtaMB = 0;
-  Float_t dNdEtaMBErrorL = 0;
-  Float_t dNdEtaMBErrorR = 0;
+  Float_t dNdEtaMB[1] = {0};
+  Float_t dNdEtaMBErrorL[1] = {0};
+  Float_t dNdEtaMBErrorR[1] = {0};
   Float_t dNdEtaToMB[numMult + 1] = {0};
   Float_t dNdEtaErrorLToMB[numMult + 1] = {0};
   Float_t dNdEtaErrorRToMB[numMult + 1] = {0};
@@ -347,15 +421,26 @@ void FinalYieldvsMult(
   Float_t YieldsErrorsStat[numMult + 1] = {0};
   Float_t YieldsErrorsSist[numMult + 1] = {0};
   Float_t Yields[numMult + 1] = {0};
-  Float_t YieldMB = 0;
-  Float_t YieldMBErrorSist = 0;
-  Float_t YieldMBErrorStat = 0;
+  Float_t YieldMB[1] = {0};
+  Float_t YieldMBErrorSist[1] = {0};
+  Float_t YieldMBErrorStat[1] = {0};
   Float_t YieldsToMB[numMult + 1] = {0};
   Float_t YieldsErrorsSistToMB[numMult + 1] = {0};
   Float_t YieldsErrorsStatToMB[numMult + 1] = {0};
+
   Float_t OmegaToPionErrorsStat[numMult + 1] = {0};
   Float_t OmegaToPionErrorsSist[numMult + 1] = {0};
   Float_t OmegaToPion[numMult + 1] = {0};
+  
+  Float_t OmegaToPionMB[1] = {0};
+  Float_t OmegaToPionMBErrorStat[1] = {0};
+  Float_t OmegaToPionMBErrorSist[1] = {0};
+  Float_t OmegaToPionToMBErrorsStat[numMult + 1] = {0};
+  Float_t OmegaToPionToMBErrorsSist[numMult + 1] = {0};
+  Float_t OmegaToPionToMB[numMult + 1] = {0};
+
+  Float_t YieldsPionsToMB[numMult + 1] = {0};
+  Float_t ErrStatYieldsPionsToMB[numMult + 1] = {0};
 
   for (Int_t i = 0; i < numMult; i++)
   {
@@ -371,42 +456,42 @@ void FinalYieldvsMult(
     else if (dNdEtaFlag == 1)
     { // Run3 Nicolò estimate
       dNdEta[i] = dNdEtaRun3[i] / AdjustFactordNdeta;
-      dNdEtaErrorL[i] = dNdEtaRun3ErrorL[i];
-      dNdEtaErrorR[i] = dNdEtaRun3ErrorR[i];
+      dNdEtaErrorL[i] = dNdEtaRun3ErrorL[i] / AdjustFactordNdeta;
+      dNdEtaErrorR[i] = dNdEtaRun3ErrorR[i] / AdjustFactordNdeta;
     }
     cout << "dNdeta " << dNdEta[i] << endl;
     cout << "Yields[" << i << "] = " << Yields[i] << endl;
   }
 
-  YieldMBErrorStat = hYield->GetBinError(numMult + 1);
-  YieldMBErrorSist = hYieldSistTotal->GetBinError(numMult + 1);
-  YieldMB = hYield->GetBinContent(numMult + 1);
-  cout << "YieldMB = " << YieldMB << endl;
-  cout << "YieldMBErrorStat = " << YieldMBErrorStat << endl;
+  YieldMBErrorStat[0] = hYield->GetBinError(numMult + 1);
+  YieldMBErrorSist[0] = hYieldSistTotal->GetBinError(numMult + 1);
+  YieldMB[0] = hYield->GetBinContent(numMult + 1);
+  cout << "YieldMB = " << YieldMB[0] << endl;
+  cout << "YieldMBErrorStat = " << YieldMBErrorStat[0] << endl;
 
   if (dNdEtaFlag == 0)
   { // Run2
-    dNdEtaMB = dNdEtaRun2MB;
-    dNdEtaMBErrorL = dNdEtaRun2MBErrorL;
-    dNdEtaMBErrorR = dNdEtaRun2MBErrorR;
+    dNdEtaMB[0] = dNdEtaRun2MB;
+    dNdEtaMBErrorL[0] = dNdEtaRun2MBErrorL;
+    dNdEtaMBErrorR[0] = dNdEtaRun2MBErrorR;
   }
   else if (dNdEtaFlag == 1)
   { // Run3 Nicolò estimate
-    dNdEtaMB = dNdEtaRun3MB;
-    dNdEtaMBErrorL = dNdEtaRun3MBErrorL;
-    dNdEtaMBErrorR = dNdEtaRun3MBErrorR;
+    dNdEtaMB[0] = dNdEtaRun3MB / AdjustFactordNdeta;
+    dNdEtaMBErrorL[0] = dNdEtaRun3MBErrorL / AdjustFactordNdeta;
+    dNdEtaMBErrorR[0] = dNdEtaRun3MBErrorR / AdjustFactordNdeta;
   }
-  cout << "\n\e[35mdNdeta MB " << dNdEtaMB << "\n\e[39m" << endl;
+  cout << "\n\e[35mdNdeta MB " << dNdEtaMB[0] << "\n\e[39m" << endl;
   for (Int_t i = 0; i < numMult; i++)
   {
-    dNdEtaToMB[i] = dNdEta[i] / dNdEtaMB;
-    dNdEtaErrorLToMB[i] = dNdEtaToMB[i] * sqrt(pow(dNdEtaErrorL[i] / dNdEta[i], 2) + pow(dNdEtaMBErrorL / dNdEtaMB, 2));
-    dNdEtaErrorRToMB[i] = dNdEtaToMB[i] * sqrt(pow(dNdEtaErrorR[i] / dNdEta[i], 2) + pow(dNdEtaMBErrorR / dNdEtaMB, 2));
+    dNdEtaToMB[i] = dNdEta[i] / dNdEtaMB[0];
+    dNdEtaErrorLToMB[i] = dNdEtaToMB[i] * sqrt(pow(dNdEtaErrorL[i] / dNdEta[i], 2) + pow(dNdEtaMBErrorL[0] / dNdEtaMB[0], 2));
+    dNdEtaErrorRToMB[i] = dNdEtaToMB[i] * sqrt(pow(dNdEtaErrorR[i] / dNdEta[i], 2) + pow(dNdEtaMBErrorR[0] / dNdEtaMB[0], 2));
     cout << "dNdeta  " << dNdEta[i] << endl;
     cout << "dNdeta / dNdetaMB " << dNdEtaToMB[i] << endl;
-    YieldsToMB[i] = Yields[i] / YieldMB;
-    YieldsErrorsStatToMB[i] = YieldsToMB[i] * sqrt(pow(YieldsErrorsStat[i] / Yields[i], 2) + pow(YieldMBErrorStat / YieldMB, 2));
-    YieldsErrorsSistToMB[i] = YieldsToMB[i] * sqrt(pow(YieldsErrorsSist[i] / Yields[i], 2) + pow(YieldMBErrorSist / YieldMB, 2));
+    YieldsToMB[i] = Yields[i] / YieldMB[0];
+    YieldsErrorsStatToMB[i] = YieldsToMB[i] * sqrt(pow(YieldsErrorsStat[i] / Yields[i], 2) + pow(YieldMBErrorStat[0] / YieldMB[0], 2));
+    YieldsErrorsSistToMB[i] = YieldsToMB[i] * sqrt(pow(YieldsErrorsSist[i] / Yields[i], 2) + pow(YieldMBErrorSist[0] / YieldMB[0], 2));
     cout << "Yields / YieldMB " << YieldsToMB[i] << endl;
   }
 
@@ -444,6 +529,7 @@ void FinalYieldvsMult(
   Float_t tickYL = 0.045;
 
   Int_t ColorDiff = 1;
+  Int_t ColorMB = kPink - 9;
   Int_t MarkerType = 20;
   Float_t MarkerSize = 1.5;
   Int_t LineStyle = 1;
@@ -473,39 +559,32 @@ void FinalYieldvsMult(
 
   TGraphAsymmErrors *ghistoYield;
   TGraphAsymmErrors *ghistoYieldSist;
+  TGraphAsymmErrors *ghistoYieldMB;
+  TGraphAsymmErrors *ghistoYieldSistMB;
   ghistoYield = new TGraphAsymmErrors(numMult, dNdEta, Yields, 0, 0, YieldsErrorsStat, YieldsErrorsStat);
+  ghistoYieldMB = new TGraphAsymmErrors(numMultMB, dNdEtaMB, YieldMB, 0, 0, YieldMBErrorStat, YieldMBErrorStat);
   ghistoYieldSist = new TGraphAsymmErrors(numMult, dNdEta, Yields, dNdEtaErrorL, dNdEtaErrorR, YieldsErrorsSist, YieldsErrorsSist);
+  ghistoYieldSistMB = new TGraphAsymmErrors(numMultMB, dNdEtaMB, YieldMB, dNdEtaMBErrorL, dNdEtaMBErrorR, YieldMBErrorSist, YieldMBErrorSist);
   StyleTGraphErrors(ghistoYield, ColorDiff, MarkerType, MarkerSize, LineStyle);
+  StyleTGraphErrors(ghistoYieldMB, ColorMB, MarkerType, MarkerSize, LineStyle);
   StyleTGraphErrors(ghistoYieldSist, ColorDiff, MarkerType, MarkerSize, LineStyle);
+  StyleTGraphErrors(ghistoYieldSistMB, ColorMB, MarkerType, MarkerSize, LineStyle);
   ghistoYield->SetFillColor(ColorDiff);
+  ghistoYieldMB->SetFillColor(ColorMB);
   ghistoYieldSist->SetFillStyle(0);
   ghistoYieldSist->SetFillColor(ColorDiff);
+  ghistoYieldSistMB->SetFillStyle(0);
+  ghistoYieldSistMB->SetFillColor(ColorMB);
   ghistoYield->Fit(fitRun3YieldvsMult, "R0");
   ghistoYieldSist->Draw("same p2");
-  //  ghistoYieldSistMultUnCorr->SetFillStyle(3001);
-  //  ghistoYieldSistMultUnCorr->SetFillColor(ColorDiff);
-  //  ghistoYieldSistMultUnCorr->DrawClone("same p2");
+  ghistoYieldSistMB->Draw("same p2");
+  //   ghistoYieldSistMultUnCorr->SetFillStyle(3001);
+  //   ghistoYieldSistMultUnCorr->SetFillColor(ColorDiff);
+  //   ghistoYieldSistMultUnCorr->DrawClone("same p2");
   ghistoYield->Draw("same e");
-
-  // get published yields vs mult
-  TFile *yieldPub = new TFile("PublishedYield13TeV/HEPData-ins1748157-v1-Table_8cO.root", "");
-  TDirectoryFile *dirYieldPub = (TDirectoryFile *)yieldPub->Get("Table 8cO");
-  TH1F *hYieldvsMultPub = (TH1F *)dirYieldPub->Get("Hist1D_y1");
-  TH1F *hYieldvsMultPubStatErr = (TH1F *)dirYieldPub->Get("Hist1D_y1_e1");
-  TH1F *hYieldvsMultPubSistErr = (TH1F *)dirYieldPub->Get("Hist1D_y1_e2");
-  TH1F *hYieldvsMultPubStat = (TH1F *)hYieldvsMultPub->Clone("hYieldPubStat");
-  TH1F *hYieldvsMultPubSist = (TH1F *)hYieldvsMultPub->Clone("hYieldPubSist");
-  for (Int_t b = 1; b <= hYieldvsMultPubStat->GetNbinsX(); b++)
-  {
-    hYieldvsMultPubStat->SetBinError(b, hYieldvsMultPubStatErr->GetBinContent(b));
-    hYieldvsMultPubSist->SetBinError(b, hYieldvsMultPubSistErr->GetBinContent(b));
-  }
-  hYieldvsMultPubStat->SetMarkerStyle(20);
-  hYieldvsMultPubStat->SetMarkerColor(kAzure + 7);
-  hYieldvsMultPubStat->SetLineColor(kAzure + 7);
-  hYieldvsMultPubSist->SetMarkerStyle(20);
-  hYieldvsMultPubSist->SetMarkerColor(kAzure + 7);
-  hYieldvsMultPubSist->SetLineColor(kAzure + 7);
+  ghistoYieldMB->Draw("same e");
+  TLegendEntry *legMB = LegendMB->AddEntry(ghistoYieldMB, "FT0M 0-100%", "p");
+  legMB->SetTextColor(ColorMB);
 
   canvasYieldvsdNdeta->cd();
   hYieldvsMultPubStat->Fit("fitPubYieldvsMult", "R0");
@@ -516,6 +595,7 @@ void FinalYieldvsMult(
   fitPubYieldvsMult->Draw("same");
   LegendTitle->Draw("");
   LegendPub->Draw("");
+  LegendMB->Draw("");
   canvasYieldvsdNdeta->SaveAs(stringoutpdf + "_OmegaYieldvsdNdeta.pdf");
   canvasYieldvsdNdeta->SaveAs(stringoutpdf + "_OmegaYieldvsdNdeta.png");
 
@@ -533,11 +613,15 @@ void FinalYieldvsMult(
   Float_t YieldsPubErrorsSistToMB[10] = {0};
   Float_t dNdEtaPubToMB[10] = {0};
   Float_t dNdEtaErrorPubToMB[10] = {0};
+  Float_t dNdEtaPub[10] = {0};
+  Float_t dNdEtaErrorPub[10] = {0};
   for (Int_t i = 0; i < hYieldvsMultPubStat->GetNbinsX(); i++)
   {
     if (hYieldvsMultPubStat->GetBinContent(i + 1) == 0)
       continue;
+    dNdEtaPub[i] = hYieldvsMultPubStat->GetBinCenter(i + 1);
     dNdEtaPubToMB[i] = hYieldvsMultPubStat->GetBinCenter(i + 1) / dNdEtaRun2MB;
+    dNdEtaErrorPub[i] = hYieldvsMultPubStat->GetBinWidth(i + 1) / 2;
     dNdEtaErrorPubToMB[i] = hYieldvsMultPubStat->GetBinWidth(i + 1) / dNdEtaRun2MB / 2;
     YieldsPubToMB[i] = hYieldvsMultPubStat->GetBinContent(i + 1) / YieldPubMB;
     YieldsPubErrorsStatToMB[i] = YieldsPubToMB[i] * sqrt(pow(hYieldvsMultPubStat->GetBinError(i + 1) / hYieldvsMultPubStat->GetBinContent(i + 1), 2) + pow(YieldPubMBErrStat / YieldPubMB, 2));
@@ -573,6 +657,44 @@ void FinalYieldvsMult(
 
   canvasYieldvsdNdetaToMB->SaveAs(stringoutpdf + "_OmegaYieldvsdNdetaToMB.pdf");
   canvasYieldvsdNdetaToMB->SaveAs(stringoutpdf + "_OmegaYieldvsdNdetaToMB.png");
+
+  // Yield/Yield MB vs dNdeta
+  TCanvas *canvasYieldToMBvsdNdeta = new TCanvas("canvasYieldToMBvsdNdeta", "canvasYieldToMBvsdNdeta", 1500, 1500);
+  StyleCanvas(canvasYieldToMBvsdNdeta, 0.02, 0.15, 0.1, 0.02);
+  histoYieldDummy->GetXaxis()->SetTitle(TitleXMult);
+  histoYieldDummy->GetYaxis()->SetTitle(TitleYYieldPtIntToMB);
+  histoYieldDummy->GetXaxis()->SetRangeUser(0, UpperValueX);
+  histoYieldDummy->GetYaxis()->SetRangeUser(0.001, 5);
+  histoYieldDummy->DrawClone("");
+
+  TGraphAsymmErrors *ghistoYieldToMBPub;
+  TGraphAsymmErrors *ghistoYieldToMBPubSist;
+  ghistoYieldToMBPub = new TGraphAsymmErrors(numMult, dNdEtaPub, YieldsPubToMB, 0, 0, YieldsPubErrorsStatToMB, YieldsPubErrorsStatToMB);
+  ghistoYieldToMBPubSist = new TGraphAsymmErrors(numMult, dNdEtaPub, YieldsPubToMB, dNdEtaErrorPub, dNdEtaErrorPub, YieldsPubErrorsSistToMB, YieldsPubErrorsSistToMB);
+  StyleTGraphErrors(ghistoYieldToMBPub, kAzure + 7, MarkerType, MarkerSize, LineStyle);
+  StyleTGraphErrors(ghistoYieldToMBPubSist, kAzure + 7, MarkerType, MarkerSize, LineStyle);
+  ghistoYieldToMBPub->SetFillColor(kAzure + 7);
+  ghistoYieldToMBPubSist->SetFillStyle(0);
+  ghistoYieldToMBPubSist->SetFillColor(kAzure + 7);
+  ghistoYieldToMBPubSist->Draw("same p2");
+  ghistoYieldToMBPub->Draw("same e");
+
+  TGraphAsymmErrors *ghistoYieldToMBStat;
+  TGraphAsymmErrors *ghistoYieldToMBSist;
+  ghistoYieldToMBStat = new TGraphAsymmErrors(numMult, dNdEta, YieldsToMB, 0, 0, YieldsErrorsStatToMB, YieldsErrorsStatToMB);
+  ghistoYieldToMBSist = new TGraphAsymmErrors(numMult, dNdEta, YieldsToMB, dNdEtaErrorL, dNdEtaErrorR, YieldsErrorsSistToMB, YieldsErrorsSistToMB);
+  StyleTGraphErrors(ghistoYieldToMBStat, ColorDiff, MarkerType, MarkerSize, LineStyle);
+  StyleTGraphErrors(ghistoYieldToMBSist, ColorDiff, MarkerType, MarkerSize, LineStyle);
+  ghistoYieldToMBStat->SetFillColor(ColorDiff);
+  ghistoYieldToMBSist->SetFillStyle(0);
+  ghistoYieldToMBSist->SetFillColor(ColorDiff);
+  ghistoYieldToMBSist->Draw("same p2");
+  ghistoYieldToMBStat->Draw("same e");
+  LegendTitleLeft->Draw();
+  LegendPubLeft->Draw("");
+
+  canvasYieldToMBvsdNdeta->SaveAs(stringoutpdf + "_OmegaYieldToMBvsdNdeta.pdf");
+  canvasYieldToMBvsdNdeta->SaveAs(stringoutpdf + "_OmegaYieldToMBvsdNdeta.png");
 
   // Ratio between fit functions
   TCanvas *canvasRatio = new TCanvas("canvasRatio", "canvasRatio", 1500, 1500);
@@ -720,7 +842,6 @@ void FinalYieldvsMult(
   canvasRatioOmToPi->SaveAs(stringoutpdf + "_RatioOmToPi.png");
 
   // Omega over pion vs multiplicity
-
   // Ropes
   TFile *fileRopes = new TFile("MCPredictions/Results_Ropes_V0M_13TeV.root", "");
   TDirectoryFile *dirRopes = (TDirectoryFile *)fileRopes->Get("MB");
@@ -752,14 +873,13 @@ void FinalYieldvsMult(
   legendModel->AddEntry(OmegaToPionsMonash, "Pythia 8 Monash", "lp");
   legendModel->SetFillStyle(0);
   legendModel->SetTextSize(0.04);
-    
 
   TCanvas *canvasOmToPionvsdNdeta = new TCanvas("canvasOmToPionvsdNdeta", "canvasOmToPionvsdNdeta", 1500, 1500);
   StyleCanvas(canvasOmToPionvsdNdeta, 0.02, 0.15, 0.1, 0.02);
   histoYieldDummy->GetXaxis()->SetTitle(TitleXMult);
   histoYieldDummy->GetYaxis()->SetTitle("#Omega / #pi");
   histoYieldDummy->GetXaxis()->SetRangeUser(0, UpperValueX);
-  histoYieldDummy->GetYaxis()->SetRangeUser(0, 0.0015);
+  histoYieldDummy->GetYaxis()->SetRangeUser(0.000001, 0.0015);
   histoYieldDummy->DrawClone("");
 
   for (Int_t i = 0; i < numMult; i++)
@@ -769,27 +889,88 @@ void FinalYieldvsMult(
     OmegaToPionErrorsStat[i] = OmegaToPion[i] * sqrt(pow(YieldsErrorsStat[i] / Yields[i], 2) + pow(hYieldPions->GetBinError(i + 1) / hYieldPions->GetBinContent(i + 1), 2));
     OmegaToPionErrorsSist[i] = OmegaToPion[i] * sqrt(pow(YieldsErrorsSist[i] / Yields[i], 2) + pow(YieldsErrorsSist[i] / Yields[i], 2));
     cout << "Omega / Pion " << OmegaToPion[i] << endl;
+    YieldsPionsToMB[i] = hYieldPions->GetBinContent(i + 1) / hYieldPions->GetBinContent(numMult + 1);
+    ErrStatYieldsPionsToMB[i] = YieldsPionsToMB[i] * sqrt(pow(hYieldPions->GetBinError(i + 1) / hYieldPions->GetBinContent(i + 1), 2) + pow(hYieldPions->GetBinError(numMult + 1) / hYieldPions->GetBinContent(numMult + 1), 2));
+    OmegaToPionToMB[i] = YieldsToMB[i] / YieldsPionsToMB[i];
+    OmegaToPionToMBErrorsStat[i] = OmegaToPionToMB[i] * sqrt(pow(YieldsErrorsStatToMB[i] / YieldsToMB[i], 2) + pow(ErrStatYieldsPionsToMB[i] / YieldsPionsToMB[i], 2));
+    OmegaToPionToMBErrorsSist[i] = OmegaToPionToMB[i] * sqrt(pow(YieldsErrorsSistToMB[i] / YieldsToMB[i], 2) + pow(YieldsErrorsSistToMB[i] / YieldsToMB[i], 2));
   }
+  OmegaToPionMB[0] = hYield->GetBinContent(numMult + 1) / hYieldPions->GetBinContent(numMult + 1);
+  OmegaToPionMBErrorStat[0] = OmegaToPionMB[0] * sqrt(pow(YieldMBErrorStat[0] / YieldMB[0], 2) + pow(hYieldPions->GetBinError(numMult + 1) / hYieldPions->GetBinContent(numMult + 1), 2));
+  OmegaToPionMBErrorSist[0] = OmegaToPionMB[0] * sqrt(pow(YieldMBErrorSist[0] / YieldMB[0], 2) + pow(YieldMBErrorSist[0] / YieldMB[0], 2));
+  cout << "Omega / Pion MB = " << OmegaToPionMB[0] << endl;
+
   TGraphAsymmErrors *ghistoYieldOmegaToPion;
   TGraphAsymmErrors *ghistoYieldSistOmegaToPion;
+  TGraphAsymmErrors *ghistoYieldOmegaToPionMB;
+  TGraphAsymmErrors *ghistoYieldSistOmegaToPionMB;
   ghistoYieldOmegaToPion = new TGraphAsymmErrors(numMult, dNdEta, OmegaToPion, 0, 0, OmegaToPionErrorsStat, OmegaToPionErrorsStat);
   ghistoYieldSistOmegaToPion = new TGraphAsymmErrors(numMult, dNdEta, OmegaToPion, dNdEtaErrorL, dNdEtaErrorR, OmegaToPionErrorsSist, OmegaToPionErrorsSist);
+  ghistoYieldOmegaToPionMB = new TGraphAsymmErrors(1, dNdEtaMB, OmegaToPionMB, 0, 0, OmegaToPionMBErrorStat, OmegaToPionMBErrorStat);
+  ghistoYieldSistOmegaToPionMB = new TGraphAsymmErrors(1, dNdEtaMB, OmegaToPionMB, dNdEtaMBErrorL, dNdEtaMBErrorR, OmegaToPionMBErrorSist, OmegaToPionMBErrorSist);
   StyleTGraphErrors(ghistoYieldOmegaToPion, ColorDiff, MarkerType, MarkerSize, LineStyle);
   StyleTGraphErrors(ghistoYieldSistOmegaToPion, ColorDiff, MarkerType, MarkerSize, LineStyle);
+  StyleTGraphErrors(ghistoYieldOmegaToPionMB, ColorMB, MarkerType, MarkerSize, LineStyle);
+  StyleTGraphErrors(ghistoYieldSistOmegaToPionMB, ColorMB, MarkerType, MarkerSize, LineStyle);
   ghistoYieldOmegaToPion->SetFillColor(ColorDiff);
   ghistoYieldSistOmegaToPion->SetFillStyle(0);
   ghistoYieldSistOmegaToPion->SetFillColor(ColorDiff);
+  ghistoYieldOmegaToPionMB->SetFillColor(ColorDiff);
+  ghistoYieldSistOmegaToPionMB->SetFillStyle(0);
+  ghistoYieldSistOmegaToPionMB->SetFillColor(ColorDiff);
+  TLegendEntry *legMBLeft = LegendMBLeft->AddEntry(ghistoYieldOmegaToPionMB, "FT0M 0-100%", "p");
+  legMBLeft->SetTextColor(ColorMB);
+
   ghistoYieldSistOmegaToPion->Draw("same p2");
   ghistoYieldOmegaToPion->Draw("same e");
+  ghistoYieldSistOmegaToPionMB->Draw("same p2");
+  ghistoYieldOmegaToPionMB->Draw("same e");
   OmegaToPionsMonash->Draw("same l");
   OmegaToPionsRopes->Draw("same l");
+  hOmegaToPionsNatureStat->Draw("same e0x0");
+  hOmegaToPionsNatureSyst->SetFillStyle(0);
+  hOmegaToPionsNatureSyst->Draw("same e2");
 
-  LegendTitleLeft->Draw();
-  LegendPubLeft->Draw("");
+  LegendTitleLeft->Draw("");
+  LegendMBLeft->Draw("");
+  LegendPubNature->Draw("");
   legendModel->Draw("");
 
   canvasOmToPionvsdNdeta->SaveAs(stringoutpdf + "_RatioOmToPidNdeta.pdf");
   canvasOmToPionvsdNdeta->SaveAs(stringoutpdf + "_RatioOmToPidNdeta.png");
+
+  TCanvas *canvasOmToPionvsdNdetaToMB = new TCanvas("canvasOmToPionvsdNdetaToMB", "canvasOmToPionvsdNdetaToMB", 1500, 1500);
+  StyleCanvas(canvasOmToPionvsdNdetaToMB, 0.02, 0.15, 0.1, 0.02);
+  histoYieldDummy->GetXaxis()->SetTitle(TitleXMult);
+  histoYieldDummy->GetYaxis()->SetTitle("(#Omega / #pi) / (#Omega / #pi)_{MB}");
+  histoYieldDummy->GetXaxis()->SetRangeUser(0, UpperValueX);
+  histoYieldDummy->GetYaxis()->SetRangeUser(0.000001, 5);
+  histoYieldDummy->DrawClone("");
+
+  TGraphAsymmErrors *ghistoYieldOmegaToPionToMB;
+  TGraphAsymmErrors *ghistoYieldSistOmegaToPionToMB;
+  ghistoYieldOmegaToPionToMB = new TGraphAsymmErrors(numMult, dNdEta, OmegaToPionToMB, 0, 0, OmegaToPionToMBErrorsStat, OmegaToPionToMBErrorsStat);
+  ghistoYieldSistOmegaToPionToMB = new TGraphAsymmErrors(numMult, dNdEta, OmegaToPionToMB, dNdEtaErrorL, dNdEtaErrorR, OmegaToPionToMBErrorsSist, OmegaToPionToMBErrorsSist);
+  StyleTGraphErrors(ghistoYieldOmegaToPionToMB, ColorDiff, MarkerType, MarkerSize, LineStyle);
+  StyleTGraphErrors(ghistoYieldSistOmegaToPionToMB, ColorDiff, MarkerType, MarkerSize, LineStyle);
+  ghistoYieldOmegaToPionToMB->SetFillColor(ColorDiff);
+  ghistoYieldSistOmegaToPionToMB->SetFillStyle(0);
+  ghistoYieldSistOmegaToPionToMB->SetFillColor(ColorDiff);
+
+  ghistoYieldSistOmegaToPionToMB->Draw("same p2");
+  ghistoYieldOmegaToPionToMB->Draw("same e");
+
+  LegendTitleLeft->Draw("");
+  LegendPubNature->Draw("");
+  legendModel->Draw("");
+
+  canvasOmToPionvsdNdetaToMB->SaveAs(stringoutpdf + "_RatioOmToPidNdetaToMB.pdf");
+  canvasOmToPionvsdNdetaToMB->SaveAs(stringoutpdf + "_RatioOmToPidNdetaToMB.png");
+
+  TFile *fileout = new TFile(stringout, "RECREATE");
+  ghistoYield->Write();
+  ghistoYieldSist->Write();
+  ghistoYieldMB->Write();
   fileout->Close();
 
   cout << "\nStarting from the files (for the different fit types): " << PathIn << endl;

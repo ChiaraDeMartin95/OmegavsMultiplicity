@@ -114,10 +114,10 @@ void StylePad(TPad *pad, Float_t LMargin, Float_t RMargin, Float_t TMargin, Floa
 
 void YieldTotalSist(Int_t part = 6,
                     Int_t ChosenMult = numMult,
-                    TString PathInSyst = ExtrPathInSyst, 
-                    TString SysPath = ExtrSysPath, 
+                    TString PathInSyst = ExtrPathInSyst,
+                    TString SysPath = "",
                     TString OutputDir = "SystematicErrors/",
-                    TString year = Extryear, 
+                    TString year = Extryear,
                     Bool_t isSysStudy = 1,
                     Int_t MultType = ExtrMultType, // 0: no mult for backward compatibility, 1: FT0M, 2: FV0A
                     Bool_t UseTwoGauss = ExtrUseTwoGauss,
@@ -125,6 +125,11 @@ void YieldTotalSist(Int_t part = 6,
                     Int_t evFlag = ExtrevFlag // 0: INEL - 1; 1: INEL > 0; 2: INEL > 1
 )
 {
+
+  if (part == 3 || part == 4 || part == 5)
+    SysPath = ExtrSysPathXi;
+  else if (part == 6 || part == 7 || part == 8)
+    SysPath = ExtrSysPathOmega;
 
   gStyle->SetOptStat(0);
   if (ChosenMult > numMult)
@@ -181,6 +186,7 @@ void YieldTotalSist(Int_t part = 6,
   TH1F *fHistSpectrumRelErrSist_PileUp[numMult + 1];
   TH1F *fHistSpectrumRelErrSist_OOBPileUp[numMult + 1];
   TH1F *fHistSpectrumRelErrSist_MCEff[numMult + 1];
+  TH1F *fHistSpectrumRelErrSist_SignalLoss[numMult + 1];
   TH1F *fHistSpectrumRelErrSist[numMult + 1];
   TH1F *fHistSpectrumRelErrSistPtCorr[numMult + 1];
 
@@ -243,7 +249,7 @@ void YieldTotalSist(Int_t part = 6,
     cout << "Path in : " << PathIn << endl;
 
     fileIn[m] = TFile::Open(PathIn);
-    fHistSpectrumStat[m] = (TH1F *)fileIn[m]->Get("histoYieldCorr");
+    fHistSpectrumStat[m] = (TH1F *)fileIn[m]->Get("histoYieldCorrELCorr");
     fHistSpectrumStat[m]->SetName("histoSpectrumStat" + Smolt[m]);
     if (!fHistSpectrumStat[m])
     {
@@ -336,7 +342,14 @@ void YieldTotalSist(Int_t part = 6,
     }
     for (Int_t i = 1; i <= fHistSpectrumRelErrSist_OOBPileUp[m]->GetNbinsX(); i++)
     {
-      fHistSpectrumRelErrSist_OOBPileUp[m]->SetBinContent(i, 0);
+      //fHistSpectrumRelErrSist_OOBPileUp[m]->SetBinContent(i, 0);
+    }
+
+    // 7. SystError mult dependence of signal loss
+    fHistSpectrumRelErrSist_SignalLoss[m] = (TH1F *)fHistSpectrumRelErrSist_OOBPileUp[m]->Clone("hSigLossSyst");
+    for (Int_t i = 1; i <= fHistSpectrumRelErrSist_SignalLoss[m]->GetNbinsX(); i++)
+    {
+      fHistSpectrumRelErrSist_SignalLoss[m]->SetBinContent(i, 0.01);
     }
 
     //*********** SUM IN QUADRATURE OF ALL SOURCES OF UNCERTAINTY *************//
@@ -350,21 +363,23 @@ void YieldTotalSist(Int_t part = 6,
                                                        TMath::Power(fHistSpectrumRelErrSist_SigExt[m]->GetBinContent(i), 2) +
                                                        TMath::Power(fHistSpectrumRelErrSist_PileUp[m]->GetBinContent(i), 2) +
                                                        TMath::Power(fHistSpectrumRelErrSist_OOBPileUp[m]->GetBinContent(i), 2) +
+                                                       TMath::Power(fHistSpectrumRelErrSist_SignalLoss[m]->GetBinContent(i), 2) +
                                                        TMath::Power(fHistSpectrumRelErrSist_MCEff[m]->GetBinContent(i), 2)));
       fHistSpectrumRelErrSistPtCorr[m]->SetBinContent(i, TMath::Sqrt(
-                                                       TMath::Power(fHistSpectrumRelErrSist_MB[m]->GetBinContent(i), 2) +
-                                                       TMath::Power(fHistSpectrumRelErrSist_SigExt[m]->GetBinContent(i), 2) +
-                                                       TMath::Power(fHistSpectrumRelErrSist_PileUp[m]->GetBinContent(i), 2) +
-                                                       TMath::Power(fHistSpectrumRelErrSist_OOBPileUp[m]->GetBinContent(i), 2) +
-                                                       TMath::Power(fHistSpectrumRelErrSist_MCEff[m]->GetBinContent(i), 2)));
+                                                             TMath::Power(fHistSpectrumRelErrSist_MB[m]->GetBinContent(i), 2) +
+                                                             TMath::Power(fHistSpectrumRelErrSist_SigExt[m]->GetBinContent(i), 2) +
+                                                             TMath::Power(fHistSpectrumRelErrSist_PileUp[m]->GetBinContent(i), 2) +
+                                                             TMath::Power(fHistSpectrumRelErrSist_OOBPileUp[m]->GetBinContent(i), 2) +
+                                                             TMath::Power(fHistSpectrumRelErrSist_SignalLoss[m]->GetBinContent(i), 2) +
+                                                             TMath::Power(fHistSpectrumRelErrSist_MCEff[m]->GetBinContent(i), 2)));
     }
 
     fHistSpectrumSist[m] = (TH1F *)fHistSpectrumStat[m]->Clone("histoSpectrumSist" + Smolt[m]);
     fHistSpectrumSistPtCorr[m] = (TH1F *)fHistSpectrumStat[m]->Clone("histoSpectrumSistPtCorr" + Smolt[m]);
     for (Int_t i = 1; i <= fHistSpectrumSist[m]->GetNbinsX(); i++)
     {
-      fHistSpectrumSist[m]->SetBinError(i, fHistSpectrumStat[m]->GetBinContent(i) * fHistSpectrumRelErrSist[m]->GetBinContent(i));
-      fHistSpectrumSistPtCorr[m]->SetBinError(i, fHistSpectrumStat[m]->GetBinContent(i) * fHistSpectrumRelErrSistPtCorr[m]->GetBinContent(i));
+      fHistSpectrumSist[m]->SetBinError(i, fHistSpectrumStat[m]->GetBinContent(i) * fHistSpectrumRelErrSist[m]->GetBinContent(fHistSpectrumRelErrSist[m]->FindBin(fHistSpectrumSist[m]->GetBinCenter(i))));
+      fHistSpectrumSistPtCorr[m]->SetBinError(i, fHistSpectrumStat[m]->GetBinContent(i) * fHistSpectrumRelErrSistPtCorr[m]->GetBinContent(fHistSpectrumRelErrSistPtCorr[m]->FindBin(fHistSpectrumSist[m]->GetBinCenter(i))));
     }
   } // end loop on mult
 
@@ -413,7 +428,7 @@ void YieldTotalSist(Int_t part = 6,
     fHistSpectrumRelErrSistPtCorr[m]->SetMarkerStyle(22);
     fHistSpectrumRelErrSistPtCorr[m]->SetMarkerSize(SizeMult[m]);
     fHistSpectrumRelErrSistPtCorr[m]->Draw("same");
-    
+
     legendAllMult->AddEntry(fHistSpectrumRelErrSist[m], SmoltBis[m] + "%", "pef");
   } // end loop on mult
   LegendTitle->Draw("");

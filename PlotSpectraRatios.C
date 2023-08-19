@@ -244,7 +244,7 @@ void PlotSpectraRatios(Int_t part = 8,
     cout << "Path in : " << PathIn << endl;
 
     fileIn[m] = TFile::Open(PathIn);
-    fHistSpectrumStat[m] = (TH1F *)fileIn[m]->Get("histoYieldCorr");
+    fHistSpectrumStat[m] = (TH1F *)fileIn[m]->Get("histoYieldCorrELCorr");
     fHistSpectrumStat[m]->SetName("histoSpectrumStat_" + Smolt[m]);
     if (!fHistSpectrumStat[m])
     {
@@ -266,7 +266,7 @@ void PlotSpectraRatios(Int_t part = 8,
     fHistSpectrumSist[m] = (TH1F *)fHistSpectrumStat[m]->Clone("histoSpectrumSist_" + Smolt[m]);
     for (Int_t i = 1; i <= fHistSpectrumSist[m]->GetNbinsX(); i++)
     {
-      fHistSpectrumSist[m]->SetBinError(i, fHistSpectrumStat[m]->GetBinContent(i) * fHistSpectrumRelErrSist[m]->GetBinContent(i));
+      fHistSpectrumSist[m]->SetBinError(i, fHistSpectrumStat[m]->GetBinContent(i) * fHistSpectrumRelErrSist[m]->GetBinContent(fHistSpectrumRelErrSist[m]->FindBin(fHistSpectrumStat[m]->GetBinCenter(i))));
     }
   } // end loop on mult
 

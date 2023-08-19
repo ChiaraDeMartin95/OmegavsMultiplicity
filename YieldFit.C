@@ -1,4 +1,5 @@
 #include "Riostream.h"
+#include "string"
 #include "TTimer.h"
 #include "TROOT.h"
 #include "TStyle.h"
@@ -24,7 +25,9 @@
 #include "Constants.h"
 #include "ErrRatioCorr.C"
 #include </data/dataalice/AliceSoftware/aliphysics/master_chiara/src/PWG/Tools/AliPWGFunc.h>
+//#include "AliPWGFunc.h"
 #include </data/dataalice/cdemart/AliPhysicsChiara/AliPhysics/PWGLF/SPECTRA/UTILS/YieldMean.C>
+//#include "YieldMean.C"
 #include "/Users/mbp-cdm-01/Desktop/AssegnoRicerca/Run3Analyses/OmegavsMult/InputVar.h"
 
 void StyleHisto(TH1F *histo, Float_t Low, Float_t Up, Int_t color, Int_t style, TString TitleX, TString TitleY, TString title)
@@ -116,16 +119,21 @@ void StylePad(TPad *pad, Float_t LMargin, Float_t RMargin, Float_t TMargin, Floa
 
 void YieldFit(Int_t typefit = 3, // mT scaling, Boltzmann, Fermi-Direc, Levi
               Int_t part = 8,
-              TString SysPath = ExtrSysPath,
+              TString SysPath = "",
               Bool_t isBkgParab = ExtrisBkgParab,
               TString OutputDir = "PtIntegratedYields/",
-              TString year = Extryear, 
+              TString year = Extryear,
               Bool_t isSysStudy = 1,
               Int_t MultType = 1, // 0: no mult for backward compatibility, 1: FT0M, 2: FV0A
               Bool_t UseTwoGauss = ExtrUseTwoGauss,
               Int_t evFlag = ExtrevFlag // 0: INEL - 1; 1: INEL > 0; 2: INEL > 1)
 )
 {
+
+  if (part == 3 || part == 4 || part == 5)
+    SysPath = ExtrSysPathXi;
+  else if (part == 6 || part == 7 || part == 8)
+    SysPath = ExtrSysPathOmega;
 
   // multiplicity related variables
   TString Smolt[numMult + 1];
@@ -230,7 +238,7 @@ void YieldFit(Int_t typefit = 3, // mT scaling, Boltzmann, Fermi-Direc, Levi
     cout << "Path in : " << PathIn << endl;
 
     fileIn[m] = TFile::Open(PathIn);
-    fHistSpectrumStat[m] = (TH1F *)fileIn[m]->Get("histoYieldCorr");
+    fHistSpectrumStat[m] = (TH1F *)fileIn[m]->Get("histoYieldCorrELCorr");
     fHistSpectrumStat[m]->SetName("histoSpectrumSist_" + Smolt[m]);
     if (!fHistSpectrumStat[m])
     {
@@ -300,12 +308,15 @@ void YieldFit(Int_t typefit = 3, // mT scaling, Boltzmann, Fermi-Direc, Levi
   {
     for (Int_t b = 0; b <= numMult; b++)
     {
-      UpRange[b] = 8;
+      UpRange[b] = 2.8;
     }
   }
-  for (Int_t b = 0; b <= numMult; b++)
+  else
   {
-    UpRange[b] = 2.2;
+    for (Int_t b = 0; b <= numMult; b++)
+    {
+      UpRange[b] = 2.2;
+    }
   }
 
   TString Titlehhout[9] = {"kYield",

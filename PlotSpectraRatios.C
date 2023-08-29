@@ -207,8 +207,8 @@ void PlotSpectraRatios(Int_t part = 8,
   LegendTitle->SetFillStyle(0);
   LegendTitle->SetTextAlign(33);
   LegendTitle->SetTextSize(0.04);
-  LegendTitle->AddEntry("", "#bf{ALICE Work In Progress}", "");
-  LegendTitle->AddEntry("", "pp, #sqrt{#it{s}} = 13.6 TeV", "");
+  LegendTitle->AddEntry("", "#bf{ALICE Preliminary}", "");
+  LegendTitle->AddEntry("", "Run 3, pp #sqrt{#it{s}} = 13.6 TeV", "");
   LegendTitle->AddEntry("", NamePart[part] + ", |y| < 0.5", "");
 
   TLegend *legendStatBoxK0s = new TLegend(0.25, 0.33, 0.47, 0.42);
@@ -273,8 +273,9 @@ void PlotSpectraRatios(Int_t part = 8,
   // draw spectra in multiplicity classes
   // Float_t LimSupSpectra = 9.99;
   Float_t LimSupSpectra = 9999.99;
-  if (part>=3 && part<=5) LimSupSpectra = 99999.99;
-  Float_t LimInfSpectra = 0.2 * 1e-7;
+  if (part >= 3 && part <= 5)
+    LimSupSpectra = 99999.99;
+  Float_t LimInfSpectra = 0.2 * 1e-8;
   Float_t xTitle = 15;
   Float_t xOffset = 4;
   Float_t yTitle = 30;
@@ -285,8 +286,8 @@ void PlotSpectraRatios(Int_t part = 8,
   Float_t xLabelOffset = 0.05;
   Float_t yLabelOffset = 0.01;
 
-  Float_t tickX = 0.03;
-  Float_t tickY = 0.042;
+  Float_t tickX = 0.025;
+  Float_t tickY = 0.03; // 42
 
   TH1F *hDummy = new TH1F("hDummy", "hDummy", 10000, 0, 8);
   for (Int_t i = 1; i <= hDummy->GetNbinsX(); i++)
@@ -312,6 +313,7 @@ void PlotSpectraRatios(Int_t part = 8,
       SizeMult[m] = SizeMB;
       ScaleFactorFinal[m] = ScaleFactorMB;
     }
+    SizeMult[m] = SizeMult[m] * 0.8;
     fHistSpectrumSistScaled[m] = (TH1F *)fHistSpectrumSist[m]->Clone("fHistSpectrumSistScaled_" + Smolt[m]);
     fHistSpectrumStatScaled[m] = (TH1F *)fHistSpectrumStat[m]->Clone("fHistSpectrumStatScaled_" + Smolt[m]);
     fHistSpectrumStatScaled[m]->Scale(ScaleFactorFinal[m]);
@@ -330,7 +332,7 @@ void PlotSpectraRatios(Int_t part = 8,
     fHistSpectrumSistScaled[m]->SetLineColor(ColorMult[m]);
     fHistSpectrumSistScaled[m]->SetMarkerStyle(MarkerMult[m]);
     fHistSpectrumSistScaled[m]->SetMarkerSize(SizeMult[m]);
-    fHistSpectrumStatScaled[m]->Draw("same e0x0");
+    fHistSpectrumStatScaled[m]->Draw("same ex0");
     fHistSpectrumSistScaled[m]->SetFillStyle(0);
     fHistSpectrumSistScaled[m]->Draw("same e2");
     fHistSpectrumSistScaledForLegend[m] = (TH1F *)fHistSpectrumSistScaled[m]->Clone("fHistSpectrumSistScaledForLegend_" + Smolt[m]);
@@ -342,7 +344,7 @@ void PlotSpectraRatios(Int_t part = 8,
 
   // Compute and draw spectra ratios
   // Float_t LimSupMultRatio = 5.1;
-  Float_t LimSupMultRatio = 9;
+  Float_t LimSupMultRatio = 14;
   Float_t LimInfMultRatio = 1.1 * 1e-1;
   Float_t YoffsetSpectraRatio = 1.1;
   Float_t xTitleR = 35;
@@ -355,12 +357,15 @@ void PlotSpectraRatios(Int_t part = 8,
   Float_t xLabelOffsetR = 0.02;
   Float_t yLabelOffsetR = 0.04;
 
+  Float_t tickXRatio = 0.04;
+  Float_t tickYRatio = 0.04; 
+
   TString TitleYSpectraRatio = "Ratio to " + SmoltBis[ChosenMult] + "%";
   TH1F *hDummyRatio = new TH1F("hDummyRatio", "hDummyRatio", 10000, 0, 8);
   SetFont(hDummyRatio);
   StyleHistoYield(hDummyRatio, LimInfMultRatio, LimSupMultRatio, 1, 1, TitleXPt, TitleYSpectraRatio, "", 1, 1.15, YoffsetSpectraRatio);
   SetHistoTextSize(hDummyRatio, xTitleR, xLabelR, xOffsetR, xLabelOffsetR, yTitleR, yLabelR, yOffsetR, yLabelOffsetR);
-  SetTickLength(hDummyRatio, tickX, tickY);
+  SetTickLength(hDummyRatio, tickXRatio, tickYRatio);
   hDummyRatio->GetXaxis()->SetRangeUser(0, 8);
   canvasPtSpectra->cd();
   padL1->Draw();
@@ -396,7 +401,7 @@ void PlotSpectraRatios(Int_t part = 8,
 
     if (m != ChosenMult)
     {
-      fHistSpectrumStatMultRatio[m]->Draw("same e0x0");
+      fHistSpectrumStatMultRatio[m]->Draw("same ex0");
       fHistSpectrumSistMultRatio[m]->SetFillStyle(0);
       fHistSpectrumSistMultRatio[m]->Draw("same e2");
     }

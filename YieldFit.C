@@ -28,7 +28,7 @@
 //#include "AliPWGFunc.h"
 #include </data/dataalice/cdemart/AliPhysicsChiara/AliPhysics/PWGLF/SPECTRA/UTILS/YieldMean.C>
 //#include "YieldMean.C"
-#include "/Users/mbp-cdm-01/Desktop/AssegnoRicerca/Run3Analyses/OmegavsMult/InputVar.h"
+#include "InputVar.h"
 
 void StyleHisto(TH1F *histo, Float_t Low, Float_t Up, Int_t color, Int_t style, TString TitleX, TString TitleY, TString title)
 {
@@ -238,8 +238,9 @@ void YieldFit(Int_t typefit = 3, // mT scaling, Boltzmann, Fermi-Direc, Levi
     cout << "Path in : " << PathIn << endl;
 
     fileIn[m] = TFile::Open(PathIn);
+    if (!fileIn[m]) return;
     fHistSpectrumStat[m] = (TH1F *)fileIn[m]->Get("histoYieldCorrELCorr");
-    fHistSpectrumStat[m]->SetName("histoSpectrumSist_" + Smolt[m]);
+    fHistSpectrumStat[m]->SetName("histoSpectrumStat_" + Smolt[m]);
     if (!fHistSpectrumStat[m])
     {
       cout << " no hist spectrum stat" << endl;
@@ -461,9 +462,10 @@ void YieldFit(Int_t typefit = 3, // mT scaling, Boltzmann, Fermi-Direc, Levi
     fit_pwgfunc_ScaledBis[m]->SetParameter(0, fit_pwgfuncBis[m]->GetParameter(0) * ScaleFactorFinal[m]);
     for (Int_t b = 1; b <= fHistSpectrumStat[m]->GetNbinsX(); b++)
     {
-      // cout << "bin " << b << " " << fHistSpectrumStat[m]->GetBinContent(b) << "+-" << fHistSpectrumStat[m]->GetBinError(b) << endl;
-      // cout << "bin " << b << " " << fHistSpectrumSist[m]->GetBinContent(b) << "+-" << fHistSpectrumSist[m]->GetBinError(b) << endl;
-      // cout << "bin " << b << " " << fHistSpectrumStatScaled[m]->GetBinContent(b) << "+-" << fHistSpectrumStatScaled[m]->GetBinError(b) << endl;
+       cout << "bin " << b << " " << fHistSpectrumStat[m]->GetBinContent(b) << "+-" << fHistSpectrumStat[m]->GetBinError(b) << endl;
+       cout << "bin " << b << " " << fHistSpectrumSist[m]->GetBinContent(b) << "+-" << fHistSpectrumSist[m]->GetBinError(b) << endl;
+       cout << "bin " << b << " " << fHistSpectrumStatScaled[m]->GetBinContent(b) << "+-" << fHistSpectrumStatScaled[m]->GetBinError(b) << endl;
+       cout << "bin " << b << " " << fHistSpectrumSistScaled[m]->GetBinContent(b) << "+-" << fHistSpectrumSistScaled[m]->GetBinError(b) << endl;
     }
     fHistSpectrumStatScaled[m]->SetMarkerColor(ColorMult[m]);
     fHistSpectrumStatScaled[m]->SetLineColor(ColorMult[m]);

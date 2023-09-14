@@ -272,10 +272,13 @@ void PlotSpectraRatios(Int_t part = 8,
 
   // draw spectra in multiplicity classes
   // Float_t LimSupSpectra = 9.99;
-  Float_t LimSupSpectra = 9999.99;
+  // Float_t LimSupSpectra = 9999.99;
+  Float_t LimSupSpectra = 15000;
   if (part >= 3 && part <= 5)
     LimSupSpectra = 99999.99;
-  Float_t LimInfSpectra = 0.2 * 1e-8;
+  // Float_t LimInfSpectra = 0.2 * 1e-8;
+  //Float_t LimInfSpectra = 0.2 * 1e-9;
+  Float_t LimInfSpectra = 0.4 * 1e-6;
   Float_t xTitle = 15;
   Float_t xOffset = 4;
   Float_t yTitle = 30;
@@ -289,19 +292,23 @@ void PlotSpectraRatios(Int_t part = 8,
   Float_t tickX = 0.025;
   Float_t tickY = 0.03; // 42
 
-  TH1F *hDummy = new TH1F("hDummy", "hDummy", 10000, 0, 8);
+  TH1F *hDummy = new TH1F("hDummy", "hDummy", 10000, 0, 8.5);
   for (Int_t i = 1; i <= hDummy->GetNbinsX(); i++)
     hDummy->SetBinContent(i, 1e-12);
   canvasPtSpectra->cd();
   SetFont(hDummy);
-  StyleHistoYield(hDummy, LimInfSpectra, LimSupSpectra, 1, 1, TitleXPt, TitleYYield, "", 1, 1.15, 1.6);
+  //TString NewTitle = "Relative yields";
+  TString NewTitle = "Probability density";
+  StyleHistoYield(hDummy, LimInfSpectra, LimSupSpectra, 1, 1, TitleXPt, NewTitle /*TitleYYield*/, "", 1, 1.15, 1.6);
   SetHistoTextSize(hDummy, xTitle, xLabel, xOffset, xLabelOffset, yTitle, yLabel, yOffset, yLabelOffset);
   SetTickLength(hDummy, tickX, tickY);
-  hDummy->GetXaxis()->SetRangeUser(0, 8);
+  hDummy->GetXaxis()->SetRangeUser(0, 8.5);
   pad1->Draw();
   pad1->cd();
   gPad->SetLogy();
   hDummy->Draw("same");
+
+  Float_t AdditionalScaleFactor = 0;
 
   for (Int_t m = numMult; m >= 0; m--)
   {
@@ -318,11 +325,16 @@ void PlotSpectraRatios(Int_t part = 8,
     fHistSpectrumStatScaled[m] = (TH1F *)fHistSpectrumStat[m]->Clone("fHistSpectrumStatScaled_" + Smolt[m]);
     fHistSpectrumStatScaled[m]->Scale(ScaleFactorFinal[m]);
     fHistSpectrumSistScaled[m]->Scale(ScaleFactorFinal[m]);
+    AdditionalScaleFactor = 0.0019655;
+    //if (m==numMult) AdditionalScaleFactor = fHistSpectrumStatScaled[numMult]->GetBinContent(fHistSpectrumStat[numMult]->FindBin(0.9));
+    cout << "AdditionalScaleFactor: " << AdditionalScaleFactor << endl;
+    fHistSpectrumStatScaled[m]->Scale(1. / AdditionalScaleFactor);
+    fHistSpectrumSistScaled[m]->Scale(1. / AdditionalScaleFactor);
     for (Int_t b = 1; b <= fHistSpectrumStat[m]->GetNbinsX(); b++)
     {
-      // cout << "bin " << b << " " << fHistSpectrumStat[m]->GetBinContent(b) << "+-" << fHistSpectrumStat[m]->GetBinError(b) << endl;
-      // cout << "bin " << b << " " << fHistSpectrumSist[m]->GetBinContent(b) << "+-" << fHistSpectrumSist[m]->GetBinError(b) << endl;
-      // cout << "bin " << b << " " << fHistSpectrumStatScaled[m]->GetBinContent(b) << "+-" << fHistSpectrumStatScaled[m]->GetBinError(b) << endl;
+      cout << "bin " << b << " " << fHistSpectrumStat[m]->GetBinContent(b) << "+-" << fHistSpectrumStat[m]->GetBinError(b) << endl;
+      cout << "bin " << b << " " << fHistSpectrumSist[m]->GetBinContent(b) << "+-" << fHistSpectrumSist[m]->GetBinError(b) << endl;
+      cout << "bin " << b << " " << fHistSpectrumStatScaled[m]->GetBinContent(b) << "+-" << fHistSpectrumStatScaled[m]->GetBinError(b) << endl;
     }
     fHistSpectrumStatScaled[m]->SetMarkerColor(ColorMult[m]);
     fHistSpectrumStatScaled[m]->SetLineColor(ColorMult[m]);
@@ -337,6 +349,8 @@ void PlotSpectraRatios(Int_t part = 8,
     fHistSpectrumSistScaled[m]->Draw("same e2");
     fHistSpectrumSistScaledForLegend[m] = (TH1F *)fHistSpectrumSistScaled[m]->Clone("fHistSpectrumSistScaledForLegend_" + Smolt[m]);
     sScaleFactorFinal[m] = Form(" (x2^{%i})", int(log2(ScaleFactorFinal[m])));
+    if (m==(numMult-1)) sScaleFactorFinal[m] = "";
+    else if (m==(numMult-2)) sScaleFactorFinal[m] = " (x2)";
     legendAllMult->AddEntry(fHistSpectrumSistScaledForLegend[m], SmoltBis[m] + "%" + sScaleFactorFinal[m] + " ", "pef");
   } // end loop on mult
   LegendTitle->Draw("");
@@ -353,20 +367,20 @@ void PlotSpectraRatios(Int_t part = 8,
   Float_t yOffsetR = 2;
 
   Float_t xLabelR = 25;
-  Float_t yLabelR = 25;
+  Float_t yLabelR = 30;
   Float_t xLabelOffsetR = 0.02;
-  Float_t yLabelOffsetR = 0.04;
+  Float_t yLabelOffsetR = 0.035;
 
   Float_t tickXRatio = 0.04;
-  Float_t tickYRatio = 0.04; 
+  Float_t tickYRatio = 0.04;
 
   TString TitleYSpectraRatio = "Ratio to " + SmoltBis[ChosenMult] + "%";
-  TH1F *hDummyRatio = new TH1F("hDummyRatio", "hDummyRatio", 10000, 0, 8);
+  TH1F *hDummyRatio = new TH1F("hDummyRatio", "hDummyRatio", 10000, 0, 8.5);
   SetFont(hDummyRatio);
   StyleHistoYield(hDummyRatio, LimInfMultRatio, LimSupMultRatio, 1, 1, TitleXPt, TitleYSpectraRatio, "", 1, 1.15, YoffsetSpectraRatio);
   SetHistoTextSize(hDummyRatio, xTitleR, xLabelR, xOffsetR, xLabelOffsetR, yTitleR, yLabelR, yOffsetR, yLabelOffsetR);
   SetTickLength(hDummyRatio, tickXRatio, tickYRatio);
-  hDummyRatio->GetXaxis()->SetRangeUser(0, 8);
+  hDummyRatio->GetXaxis()->SetRangeUser(0, 8.5);
   canvasPtSpectra->cd();
   padL1->Draw();
   padL1->cd();
@@ -410,6 +424,10 @@ void PlotSpectraRatios(Int_t part = 8,
   fileout->Close();
   canvasPtSpectra->SaveAs(stringoutpdf + ".pdf");
   canvasPtSpectra->SaveAs(stringoutpdf + ".png");
+  canvasPtSpectra->SaveAs(stringoutpdf + ".eps");
+  canvasPtSpectra->SaveAs("OmegaYields_pp136TeV_FT0M.pdf");
+  canvasPtSpectra->SaveAs("OmegaYields_pp136TeV_FT0M.png");
+  canvasPtSpectra->SaveAs("OmegaYields_pp136TeV_FT0M.eps");
   cout << "\nStarting from the files (for the different mult): " << PathIn << " and PathInSist: " << PathInSist << endl;
 
   cout << "\nI have created the file:\n " << stringout << endl;

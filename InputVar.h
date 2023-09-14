@@ -30,7 +30,8 @@ TString ExtrSfileSignalLossMBOmega = "Efficiency/effChiaraOmega_inelgt0_gt13tev_
 TString ExtrSfileSignalLossOmega = "SignalLoss/effSignalLossOmega_inelgt0_13tevClasses_gt_calibLHC23f4b2_27aug.root";
 //old files: "SignalLoss/effSignalLossOmega_inelgt0_13tevClasses_gapTriggered_14aug_lhc23d1j.root";
 TString ExtrSfileSignalLossMBXi = "Efficiency/effChiaraXi_inelgt0_lhc23e1b_3aug.root";
-TString ExtrSfileSignalLossXi = "SignalLoss/effSignalLossXi_inelgt0_13tevClasses_lhc23e1b_3aug_d1j_calib.root";
+TString ExtrSfileSignalLossXi = "SignalLoss/effSignalLossOmega_inelgt0_13tevClasses_gt_calibLHC23f4b2_27aug.root";
+//"SignalLoss/effSignalLossXi_inelgt0_13tevClasses_lhc23e1b_3aug_d1j_calib.root";
 
 TString SfileinAnchoring = "RunByRunComparison/AnchoringFactor_LHC22o_pass4_MinBias_Train108123_Yield_Omega_BkgParab_Train110357.root";
 

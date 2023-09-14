@@ -123,18 +123,18 @@ Float_t YUp = {0};
 Float_t YLowRatio = {0.99};
 Float_t YUpRatio = {1.01};
 
-void EfficiencyRatio(TString year0 = "Injected",
-                     TString year1 = "Anchored22f",
-                     TString Sfilein0 = "/Users/mbp-cdm-01/Desktop/dottorato/1Anno/QAStrangeness/Run3QA/Periods/LHC23e1b/PostProcess_qa_LHC23e1b_Train103380.root",
-                     TString Sfilein1 = "/Users/mbp-cdm-01/Desktop/dottorato/1Anno/QAStrangeness/Run3QA/Periods/LHC23d1f/PostProcess_qa_LHC23d1f_Train97025.root",
-
-                     Int_t ChosenPart = 0,
+void EfficiencyRatio(TString year0 = "GapTriggeredAnchoredTo22o",
+                     TString year1 = "GapTriggeredNotAnchored",
+                     TString Sfilein0 = "Efficiency/effChiaraOmega_inelgt0_gt13tev_27aug.root",
+                     TString Sfilein1 = "Efficiency/effChiaraOmega_inelgt0_gapTriggered_14aug.root",
+                     Int_t Choice = 0, // 0:effxacc, 1:signal loss
+                     Int_t ChosenPart = 8,
                      TString OutputDir = "Efficiency/")
 {
-  Int_t Choice = 0;
+  
   Int_t ChosenType = -1;
   TString TypeHisto = "EfficiencyvsPt";
-  TString Spart[numPart] = {"K0S", "Lam", "ALam", "XiMin", "XiPlu", "OmMin", "OmPlu"};
+  TString Spart[numPart] = {"K0S", "Lam", "ALam", "XiMin", "XiPlu", "Xi", "OmMin", "OmPlu", "Om"};
   TString NamePart[numPart] = {"K^{0}_{S}", "#Lambda", "#bar{#Lambda}", "#Xi^{-}", "#Xi^{+}", "#Omega^{-}", "#Omega^{+}"};
   TString TitleY[numChoice] = {"Mean (GeV/#it{c}^{2})", "Sigma (GeV/#it{c}^{2})", "S/(S+B)", "1/#it{N}_{evt} d#it{N}/d#it{p}_{T} (GeV/#it{c})^{-1}", "Efficiency"};
   TString TitleXPt = "#it{p}_{T} (GeV/#it{c})";
@@ -143,6 +143,10 @@ void EfficiencyRatio(TString year0 = "Injected",
   Float_t YUp[numPart] = {0};
   Float_t YLowRatio = 0;
   Float_t YUpRatio = 2;
+  if (Choice==1){
+    YLowRatio = 0.9;
+    YUpRatio = 1;
+  }
 
   Int_t color0 = kRed + 2;
   Int_t color1 = kBlue + 2;
@@ -178,7 +182,7 @@ void EfficiencyRatio(TString year0 = "Injected",
 
   // Sfileout = OutputDir + "Compare" + TypeHisto + "_" + Spart[ChosenType] + "_" + year0 + "vs" + year1;
   Sfileout = OutputDir + "Compare" + TypeHisto + "_";
-  Sfileout += Spart[ChosenType] + "_";
+  Sfileout += Spart[ChosenType];
   Sfileout += year0 + "vs" + year1;
   cout << "Output file: " << Sfileout << endl;
 
@@ -188,21 +192,33 @@ void EfficiencyRatio(TString year0 = "Injected",
       continue;
     cout << "\n\e[35mParticle:\e[39m " << Spart[part] << endl;
 
-    TString inputName = TypeHisto + "_" + Spart[part];
-    histo0[part] = (TH1F *)filein0->Get(inputName);
+    // TString inputName = TypeHisto + "_" + Spart[part];
+    //  histo0[part] = (TH1F *)filein0->Get(inputName);
+    TString inputName = "hEffCascSum";
+    if (Choice==1) inputName = "hEffCascSumSignal";
+    TString namedir = "effAcc";
+    if (Choice==1) namedir = "effSignal";
+    TDirectoryFile *dir = (TDirectoryFile *)filein0->Get(namedir);
+    if (!dir)
+      return;
+    histo0[part] = (TH1F *)dir->Get(inputName);
     if (!histo0[part])
     {
       cout << "No histo name: " << inputName << " in file0" << endl;
       return;
     }
     histo0[part]->SetName(inputName + "_file0");
-    histo1[part] = (TH1F *)filein1->Get(inputName);
+    // histo1[part] = (TH1F *)filein1->Get(inputName);
+    dir = (TDirectoryFile *)filein1->Get(namedir);
+    histo1[part] = (TH1F *)dir->Get(inputName);
     if (!histo1[part])
     {
       cout << "No histo name: " << inputName << " in file1" << endl;
       return;
     }
     histo1[part]->SetName(inputName + "_file1");
+    //histo0[part]->Smooth();
+    //histo1[part]->Smooth();
 
     // Ratios
     histoRatio[part] = (TH1F *)histo0[part]->Clone(inputName + "_Ratio");
@@ -239,9 +255,16 @@ void EfficiencyRatio(TString year0 = "Injected",
       legend = new TLegend(0.5, 0.75, 0.8, 0.9);
     legend->AddEntry("", NamePart[part], "");
 
-    StyleHisto(histo0[part], YLow[part], YUp[part], color0, 33, "", TitleY[Choice], "", 0, 0, 0, 1.5, 1.5, 2);
-    StyleHisto(histo1[part], YLow[part], YUp[part], color1, 33, "", TitleY[Choice], "", 0, 0, 0, 1.5, 1.5, 2);
-    StyleHisto(histoRatio[part], YLowRatio, YUpRatio, color0, 33, TitleXPt, "Ratio to " + year1, "", 0, 0, 0, 1.5, 1.5, 2);
+    YUp[part] = 0.2;
+    if (Choice==1) {
+      YLow[part] = 0.8;
+      YUp[part] = 1;
+    }
+    TString TitleY = "Efficiency x Acc.";
+    if (Choice==1) TitleY = "Signal loss";
+    StyleHisto(histo0[part], YLow[part], YUp[part], color0, 33, "", TitleY, "", 0, 0, 0, 1.5, 1.5, 2);
+    StyleHisto(histo1[part], YLow[part], YUp[part], color1, 33, "", TitleY, "", 0, 0, 0, 1.5, 1.5, 2);
+    StyleHisto(histoRatio[part], YLowRatio, YUpRatio, color0, 33, TitleXPt, "Ratio to non-anch.", "", 0, 0, 0, 1.5, 1.5, 2);
     histoRatio[part]->GetXaxis()->SetLabelSize(0.08);
     histoRatio[part]->GetXaxis()->SetTitleSize(0.08);
     histoRatio[part]->GetXaxis()->SetTitleOffset(1.2);

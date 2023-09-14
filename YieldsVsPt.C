@@ -164,7 +164,7 @@ void YieldsVsPt(
   if (part == 3 || part == 4 || part == 5)
     SysPath = ExtrSysPathXi;
   else if (part == 6 || part == 7 || part == 8)
-    SysPath = ExtrSysPathOmega;
+    SysPath = ExtrSysPathOmega;  
 
   Float_t UpperLimitLSB = 0;
   Float_t LowerLimitRSB = 0;
@@ -204,8 +204,6 @@ void YieldsVsPt(
   SPathIn += ".root";
 
   SPathInEvt += "_" + year;
-  if (SysPath.find("_Train109827") != string::npos)
-    SPathInEvt += "_AllRuns";
   SPathInEvt += StringPathInEvt;
   // SPathInEvt += "_run528531";
   SPathInEvt += ".root";
@@ -301,7 +299,7 @@ void YieldsVsPt(
       h3->Add(h3Plus);
     if (isMB)
     {
-      MultLowBin = h3->GetXaxis()->FindBin(100 + 0.001);
+      MultLowBin = h3->GetXaxis()->FindBin(0 + 0.001);
       MultUpBin = h3->GetXaxis()->FindBin(100 - 0.001);
     }
     else
@@ -423,28 +421,25 @@ void YieldsVsPt(
   cout << "NEvents" << NEvents << endl;
 
   const Int_t numPt = 19; // 17 for omega, 19 for Xi
-  Int_t numPtMax = 19;
-  if (part == 6 || part == 7 || part == 8)
-    numPtMax = 17;
-  // default for 22m_pass4_Train79153
+  const Int_t numPtXi = 19;
+  const Int_t numPtOmega = 17;
+
   // Xi
-  /*
-   Float_t binpt[numPt + 1] = {0.4, 0.6, 0.8, 1.0,
-                              1.2, 1.4, 1.6, 1.8, 2.0,
-                              2.2, 2.4, 2.6, 2.8, 3.0,
-                              3.5, 4.0, 4.5, 5.0, 6.0, 8.0};
-                              */
+  Float_t binptXi[numPtXi + 1] = {0.4, 0.6, 0.8, 1.0,
+                                  1.2, 1.4, 1.6, 1.8, 2.0,
+                                  2.2, 2.4, 2.6, 2.8, 3.0,
+                                  3.5, 4.0, 4.5, 5.0, 6.0, 8.0};
   // Omega
-  /*
-  Float_t binpt[numPt + 1] = {0.8, 1.0,
-                              1.2, 1.4, 1.6, 1.8, 2.0,
-                              2.2, 2.4, 2.6, 2.8, 3.0,
-                              3.5, 4.0, 4.5, 5.0, 6.0, 8.0};
-*/
+  Float_t binptOmega[numPtOmega + 1] = {0.8, 1.0,
+                                        1.2, 1.4, 1.6, 1.8, 2.0,
+                                        2.2, 2.4, 2.6, 2.8, 3.0,
+                                        3.5, 4.0, 4.5, 5.0, 6.0, 8.0};
+
   Float_t binpt[numPt + 1] = {0.4, 0.6, 0.8, 1.0,
                               1.2, 1.4, 1.6, 1.8, 2.0,
                               2.2, 2.4, 2.6, 2.8, 3.0,
                               3.5, 4.0, 4.5, 5.0, 6.0, 8.0};
+
   TString SPt[numPt] = {""};
   TH1F *hInvMass[numPt];
 
@@ -960,12 +955,13 @@ void YieldsVsPt(
       hInvMass[pt]->GetXaxis()->SetRangeUser(histoMassRangeLow[part], histoMassRangeUp[part]);
       hInvMass[pt]->Draw("same e");
 
+/*
       if (isBkgParab)
         bkg2[pt]->Draw("same");
       else
         bkg1[pt]->Draw("same");
       functions1[pt]->Draw("same");
-
+*/
       mean[pt] = total[pt]->GetParameter(1);
       errmean[pt] = total[pt]->GetParError(1);
       sigma[pt] = total[pt]->GetParameter(2);
@@ -993,21 +989,22 @@ void YieldsVsPt(
     lineBkgLimitB[pt]->SetLineColor(kViolet + 1);
     lineBkgLimitC[pt]->SetLineColor(kViolet + 1);
     lineBkgLimitD[pt]->SetLineColor(kViolet + 1);
-    lineBkgLimitA[pt]->Draw("same");
-    lineBkgLimitB[pt]->Draw("same");
-    lineBkgLimitC[pt]->Draw("same");
-    lineBkgLimitD[pt]->Draw("same");
+    //lineBkgLimitA[pt]->Draw("same");
+    //lineBkgLimitB[pt]->Draw("same");
+    //lineBkgLimitC[pt]->Draw("same");
+    //lineBkgLimitD[pt]->Draw("same");
 
     // linebkgFitLL->Draw("same");
     // linebkgFitRR->Draw("same");
     // linebkgFitLR->Draw("same");
     // linebkgFitRL->Draw("same");
 
+/*
     if (isBkgParab)
       bkgparab[pt]->Draw("same");
     else
       bkgretta[pt]->Draw("same");
-
+*/
     if (pt < 9)
       canvas[0]->cd(pt + 1);
     else if (pt < 18)
@@ -1264,17 +1261,17 @@ void YieldsVsPt(
         continue;
     }
 
-    if (pt == 0)
+    if (pt == 2)
       index = 1;
-    else if (pt == 3)
+    else if (pt == 5)
       index = 2;
-    else if (pt == 6)
+    else if (pt == 8)
       index = 3;
-    else if (pt == 9)
+    else if (pt == 11)
       index = 4;
-    else if (pt == 12)
+    else if (pt == 14)
       index = 5;
-    else if (pt == 15)
+    else if (pt == 17)
       index = 6;
     else
       continue;

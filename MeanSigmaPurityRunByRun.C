@@ -124,21 +124,21 @@ Float_t YUp[numPart] = {0};
 Float_t YLowRatio[numChoice] = {0.99, 0.4, 0.8, 0.5, 0.8, 0.8, 0.8};
 Float_t YUpRatio[numChoice] = {1.01, 1.6, 1.2, 1.5, 1.2, 1.2, 1.2};
 
-const Int_t numRuns = 12;
+const Int_t numRuns = 13;
 // multiplicity related variables
 // LHC22o_pass4
 // TString Srun[numRuns+1] = {"_Run528534", "_Run528531", "_Run528463", "_Run528461", "_Run528448", "_Run528381", "_Run528379", "_Run528232", ""};
 // TString SrunBis[numRuns+1] = {"528534", "528531", "528463", "528461", "528448", "528381", "528379", "528232", "All runs"};
 
 // LHC22o_pass4_MinBias
-TString SrunBis[numRuns + 1] = {"528531", "528461", "528292", "527899", "527895", "527871", "527850", "527240", "527109", "527057", "527041", "526964", "526641"};
-TString Srun[numRuns + 1] = {"_Run528531", "_Run528461", "_Run528292", "_Run527899", "_Run527895", "_Run527871", "_Run527850", "_Run527240", "_Run527109", "_Run527057", "_Run527041", "_Run526964", "_Run526641"};
+TString SrunBis[numRuns + 1] = {"528531", "528461", "528292", "527899", "527895", "527871", "527850", "527240", "527109", "527057", "527041", "526964", "526641", "All runs"};
+TString Srun[numRuns + 1] = {"_Run528531", "_Run528461", "_Run528292", "_Run527899", "_Run527895", "_Run527871", "_Run527850", "_Run527240", "_Run527109", "_Run527057", "_Run527041", "_Run526964", "_Run526641", ""};
 
 void MeanSigmaPurityRunByRun(Int_t part = 8,
                              Int_t ChosenRun = 0,
                              Int_t Choice = 0,
                              Bool_t isBkgParab = ExtrisBkgParab,
-                             TString SysPath = ExtrSysPath,
+                             TString SysPath = "",
                              TString OutputDir = "RunByRunComparison/",
                              TString year = Extryear,
                              Bool_t isSysStudy = 1,
@@ -147,6 +147,11 @@ void MeanSigmaPurityRunByRun(Int_t part = 8,
                              Int_t evFlag = ExtrevFlag // 0: INEL - 1; 1: INEL > 0; 2: INEL > 1
 )
 {
+
+  if (part == 3 || part == 4 || part == 5)
+    SysPath = ExtrSysPathXi;
+  else if (part == 6 || part == 7 || part == 8)
+    SysPath = ExtrSysPathOmega;
 
   gStyle->SetOptStat(0);
   if (ChosenRun > numRuns)
@@ -250,7 +255,6 @@ void MeanSigmaPurityRunByRun(Int_t part = 8,
   // get spectra in multiplicity classes
   for (Int_t m = numRuns; m >= 0; m--)
   {
-    if (part >=6 && SrunBis[m] == "526641") continue; 
     PathIn = "Yields/Yields_";
     PathIn += Spart[part];
     PathIn += "_" + year;
@@ -339,7 +343,7 @@ void MeanSigmaPurityRunByRun(Int_t part = 8,
   Float_t xLabelOffsetR = 0.02;
   Float_t yLabelOffsetR = 0.04;
 
-  TString TitleYSpectraRatio = "Ratio to " + SrunBis[ChosenRun] + "%";
+  TString TitleYSpectraRatio = "Ratio to " + SrunBis[ChosenRun];
   TH1F *hDummyRatio = new TH1F("hDummyRatio", "hDummyRatio", 10000, 0, 8);
   for (Int_t i = 1; i <= hDummyRatio->GetNbinsX(); i++)
     hDummyRatio->SetBinContent(i, 1e-12);
@@ -371,7 +375,7 @@ void MeanSigmaPurityRunByRun(Int_t part = 8,
 
     if (m != ChosenRun)
     {
-      fHistSpectrumMultRatio[m]->Draw("same e0x0");
+      if (SrunBis[m] == "526641" || SrunBis[m] == "527041") fHistSpectrumMultRatio[m]->Draw("same e0x0");
     }
 
   } // end loop on mult

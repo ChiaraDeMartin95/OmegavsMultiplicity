@@ -213,6 +213,7 @@ void YieldEffCorr(Int_t part = 8,
     inputNameEff += "Sum";
   histoEff = (TH1F *)dir->Get(inputNameEff);
   histoEff->Sumw2();
+  histoEff->Smooth();
   if (!histoEff)
   {
     cout << "No histo name: " << inputNameEff << endl;
@@ -231,7 +232,7 @@ void YieldEffCorr(Int_t part = 8,
       continue;
     }
     cout << "\npt: " << histoYield->GetBinCenter(i) << endl;
-    cout << histoYield->GetBinContent(i) << " +- " << histoYield->GetBinError(i) << endl;
+    cout << histoYield->GetBinContent(i) << " +- " << histoYield->GetBinError(i) << " (rel.error: " << histoYield->GetBinError(i) / histoYield->GetBinContent(i) << ")" << endl;
     cout << histoEff->GetBinContent(histoEff->FindBin(histoYield->GetBinCenter(i))) << " +- " << histoEff->GetBinError(histoEff->FindBin(histoYield->GetBinCenter(i))) << endl;
     histoYieldCorr->SetBinContent(i, histoYield->GetBinContent(i) / histoEff->GetBinContent(histoEff->FindBin(histoYield->GetBinCenter(i))));
     RelErr = sqrt(pow(histoYield->GetBinError(i) / histoYield->GetBinContent(i), 2) + pow(histoEff->GetBinError(histoEff->FindBin(histoYield->GetBinCenter(i))) / histoEff->GetBinContent(histoEff->FindBin(histoYield->GetBinCenter(i))), 2));
@@ -422,13 +423,15 @@ void YieldEffCorr(Int_t part = 8,
     cout << "No anchoring file" << endl;
     return;
   }
+  /*
   TDirectoryFile *dirAnchFactor = (TDirectoryFile *)fileAnchFactor->Get("RatioPlot_23d1j_and_g-t");
   dirAnchFactor->SetName("dirAnchFactor");
   TH1F *histo23d1j = (TH1F *)dirAnchFactor->Get("23d1j");
   TH1F *histoGt = (TH1F *)dirAnchFactor->Get("g-t");
   TH1F *hAnchFactor = (TH1F *)histoGt->Clone("hAnchFactor");
   hAnchFactor->Divide(histo23d1j);
-
+  */
+  TH1F *hAnchFactor = (TH1F *)fileAnchFactor->Get("hFinalAnch");
   TCanvas *canvasAnchFactor = new TCanvas("canvasAnchFactor", "canvasAnchFactor", 800, 600);
   hAnchFactor->Draw();
 
@@ -438,9 +441,10 @@ void YieldEffCorr(Int_t part = 8,
     if (histoYieldCorrELCorr->GetXaxis()->GetBinLowEdge(i) < MinBinPt[part])
       continue;
     AnchFactor = hAnchFactor->GetBinContent(hAnchFactor->FindBin(histoYieldCorrELCorr->GetBinCenter(i)));
+    //AnchFactor = 1.073;
     cout << "Spectrum bef. anch. factor corr: " << histoYieldCorrELCorr->GetBinContent(i) << " +- " << histoYieldCorrELCorr->GetBinError(i) << " rel error: " << histoYieldCorrELCorr->GetBinError(i) / histoYieldCorrELCorr->GetBinContent(i) << endl;
-    //histoYieldCorrELCorr->SetBinContent(i, histoYieldCorrELCorr->GetBinContent(i) * AnchFactor);
-    //histoYieldCorrELCorr->SetBinError(i, histoYieldCorrELCorr->GetBinError(i) * AnchFactor);
+    histoYieldCorrELCorr->SetBinContent(i, histoYieldCorrELCorr->GetBinContent(i) * AnchFactor);
+    histoYieldCorrELCorr->SetBinError(i, histoYieldCorrELCorr->GetBinError(i) * AnchFactor);
     cout << "Spectrum after anch. factor corr: " << histoYieldCorrELCorr->GetBinContent(i) << " +- " << histoYieldCorrELCorr->GetBinError(i) << " rel error: " << histoYieldCorrELCorr->GetBinError(i) / histoYieldCorrELCorr->GetBinContent(i) << endl;
   }
 
@@ -473,8 +477,11 @@ void YieldEffCorr(Int_t part = 8,
   TFile *fileinPub;
   TString histoPubName;
   TH1F *histoPub;
+  TH1F *histoPubSyst;
   TH1F *histoPubErr;
+  TH1F *histoPubErrSyst;
   TH1F *histoPubFinal;
+  TH1F *histoPubFinalSyst;
   TDirectory *dirPub;
   TString SdirPub = "";
 
@@ -526,7 +533,8 @@ void YieldEffCorr(Int_t part = 8,
   {
     SPathInPub = "PublishedYield13TeV/HEPData-ins1748157-v1-Table_4.root";
     SdirPub = "Table 4";
-    histoPubName = "Hist1D_y6";
+    //histoPubName = "Hist1D_y6";
+    histoPubName = "Hist1D_y4"; // dndeta similar to Run 3 in 30-40
   }
   cout << SPathInPub << endl;
   fileinPub = new TFile(SPathInPub, "");
@@ -537,21 +545,36 @@ void YieldEffCorr(Int_t part = 8,
   }
   dirPub = (TDirectory *)fileinPub->Get(SdirPub);
   histoPub = (TH1F *)dirPub->Get(histoPubName);
+  histoPub->SetName("histoPub");
+  histoPubSyst = (TH1F *)dirPub->Get(histoPubName);
+  histoPub->SetName("histoPubSyst");
   histoPubErr = (TH1F *)dirPub->Get(histoPubName + "_e1");
+  histoPubErrSyst = (TH1F *)dirPub->Get(histoPubName + "_e2");
   for (Int_t j = 1; j <= histoPub->GetNbinsX(); j++)
   {
     histoPub->SetBinError(j, histoPubErr->GetBinContent(j));
+    histoPubSyst->SetBinError(j, histoPubErrSyst->GetBinContent(j));
   }
   histoPubFinal = (TH1F *)histoPub->Clone("histoPubFinal");
+  histoPubFinalSyst = (TH1F *)histoPubSyst->Clone("histoPubFinalSyst");
   if (!(part == 5 || part == 8))
+  {
     histoPubFinal->Scale(1. / 2);
+    histoPubFinalSyst->Scale(1. / 2);
+  }
+
+  for (Int_t j = 1; j <= histoPubFinal->GetNbinsX(); j++)
+  {
+    cout << "PUB error: " << histoPubFinal->GetBinError(j) / histoPubFinal->GetBinContent(j) << endl;
+  }
 
   StyleHisto(histoPubFinal, 0, 1.3 * histoPubFinal->GetBinContent(histoPubFinal->GetMaximumBin()), kAzure + 7, 33, TitleXPt, titleYield, "", 0, 0, 0, 1.5, 1.5, 2);
+  StyleHisto(histoPubFinalSyst, 0, 1.3 * histoPubFinal->GetBinContent(histoPubFinal->GetMaximumBin()), kAzure + 7, 33, TitleXPt, titleYield, "", 0, 0, 0, 1.5, 1.5, 2);
   TSpline3 *splinePub;
   TF1 *fsplinePub;
   splinePub = new TSpline3(histoPubFinal, "Spline");
   sp3 = (TSpline3 *)splinePub->Clone("SplineClone");
-  fsplinePub = new TF1("fSpline", spline, 0, 8);
+  fsplinePub = new TF1("fSpline", spline, 0, 5.5);
 
   TCanvas *canvasComp = new TCanvas("canvasComp" + Spart[part], "canvasComp" + Spart[part], 1000, 800);
   // StyleCanvas(canvasComp, 0.15, 0.05, 0.05, 0.15);
@@ -563,13 +586,27 @@ void YieldEffCorr(Int_t part = 8,
   StylePad(pad1, 0.18, 0.01, 0.03, 0.);   // L, R, T, B
   StylePad(padL1, 0.18, 0.01, 0.02, 0.3); // L, R, T, B
 
+  Double_t BinningPtOmega[5] = {0.8, 1.6, 2.2, 2.6, 3.};
+  TH1F *histoYieldCorrELCorrRebinned = (TH1F *)histoYieldCorrELCorr->Rebin(4, "histoYieldCorrELCorrRebinned", BinningPtOmega);
+  for (Int_t j = 1; j <= histoYieldCorrELCorrRebinned->GetNbinsX(); j++)
+  {
+   //if (j==1) histoYieldCorrELCorrRebinned->SetBinContent(j, histoYieldCorrELCorrRebinned->GetBinContent(j) * 0.25);
+   //else if (j==2) histoYieldCorrELCorrRebinned->SetBinContent(j, histoYieldCorrELCorrRebinned->GetBinContent(j) / 3);
+   //else if (j==3) histoYieldCorrELCorrRebinned->SetBinContent(j, histoYieldCorrELCorrRebinned->GetBinContent(j) * 0.5);
+   //else if (j==4) histoYieldCorrELCorrRebinned->SetBinContent(j, histoYieldCorrELCorrRebinned->GetBinContent(j) * 0.5);
+  }
   pad1->Draw();
   pad1->cd();
   StyleHisto(histoYieldCorrELCorr, 0, 1.3 * histoYieldCorrELCorr->GetBinContent(histoYieldCorrELCorr->GetMaximumBin()), ColorPart[partC], 33, TitleXPt, titleYield, "", 0, 0, 0, 1.5, 1.5, 2);
-  histoYieldCorrELCorr->GetYaxis()->SetRangeUser(0, 1.3 * histoPubFinal->GetBinContent(histoPubFinal->GetMaximumBin()));
-  histoYieldCorrELCorr->GetXaxis()->SetRangeUser(MinBinPt[part], 5);
+  // histoYieldCorrELCorr->GetYaxis()->SetRangeUser(0, 1.3 * histoPubFinal->GetBinContent(histoPubFinal->GetMaximumBin()));
+  //  histoYieldCorrELCorr->GetXaxis()->SetRangeUser(MinBinPt[part], 5);
+  histoYieldCorrELCorr->GetXaxis()->SetRangeUser(MinBinPt[part], 3);
   histoYieldCorrELCorr->Draw("same");
+  histoYieldCorrELCorr->GetXaxis()->SetRangeUser(MinBinPt[part], 8);
+  //histoYieldCorrELCorrRebinned->Draw("same");
   histoPubFinal->Draw("same");
+  histoPubFinalSyst->SetFillStyle(0);
+  histoPubFinalSyst->Draw("same e2");
   fsplinePub->SetLineColor(kAzure + 7);
   fsplinePub->SetLineWidth(2);
   fsplinePub->Draw("same");
@@ -578,26 +615,42 @@ void YieldEffCorr(Int_t part = 8,
   padL1->Draw();
   padL1->cd();
   TH1F *histoRatioToPub = (TH1F *)histoYieldCorrELCorr->Clone("histoRatioToPub");
+  TH1F *histoRatioToPubSyst = (TH1F *)histoYieldCorrELCorr->Clone("histoRatioToPubSyst");
   Float_t ALow = 0;
   Float_t AUp = 0;
+  Float_t RelYield = 0;
+  Float_t RelYieldPub = 0;
+  Float_t RelYieldPubSyst = 0;
+
   for (Int_t b = 1; b <= histoYieldCorrELCorr->GetNbinsX(); b++)
   {
     ALow = histoYieldCorrELCorr->GetBinLowEdge(b);
     AUp = histoYieldCorrELCorr->GetBinLowEdge(b + 1);
+    RelYield = histoYieldCorrELCorr->GetBinError(b) / histoYieldCorrELCorr->GetBinContent(b);
+    RelYieldPub = histoPubFinal->GetBinError(histoPubFinal->FindBin(AUp - 0.001))/histoPubFinal->GetBinContent(histoPubFinal->FindBin(AUp - 0.001));
+    RelYieldPubSyst = histoPubFinalSyst->GetBinError(histoPubFinalSyst->FindBin(AUp - 0.001))/histoPubFinalSyst->GetBinContent(histoPubFinalSyst->FindBin(AUp - 0.001));
+    cout << "rel yield pub sist " << RelYieldPubSyst << endl;
     histoRatioToPub->SetBinContent(b, histoYieldCorrELCorr->GetBinContent(b) * histoYieldCorrELCorr->GetBinWidth(b) / fsplinePub->Integral(ALow, AUp));
-    histoRatioToPub->SetBinError(b, histoYieldCorrELCorr->GetBinError(b) * histoYieldCorrELCorr->GetBinWidth(b) / fsplinePub->Integral(ALow, AUp));
+    // histoRatioToPub->SetBinError(b, histoYieldCorrELCorr->GetBinError(b) * histoYieldCorrELCorr->GetBinWidth(b) / fsplinePub->Integral(ALow, AUp));
+    histoRatioToPub->SetBinError(b, histoRatioToPub->GetBinContent(b) * sqrt(pow(RelYield, 2) + pow(RelYieldPub, 2)));
+    histoRatioToPubSyst->SetBinContent(b, histoYieldCorrELCorr->GetBinContent(b) * histoYieldCorrELCorr->GetBinWidth(b) / fsplinePub->Integral(ALow, AUp));
+    histoRatioToPubSyst->SetBinError(b, histoRatioToPubSyst->GetBinContent(b) * sqrt(pow(0.06, 2) + pow(RelYieldPubSyst, 2)));
+    // histoRatioToPubSyst->SetBinError(b, histoYieldCorrELCorr->GetBinError(b) * histoYieldCorrELCorr->GetBinWidth(b) / fsplinePub->Integral(ALow, AUp));
   }
   StyleHisto(histoRatioToPub, 0, 2, ColorPart[partC], 33, TitleXPt, "Ratio to published", "", 0, 0, 0, 1.5, 1.5, 2);
+  StyleHisto(histoRatioToPubSyst, 0, 2, ColorPart[partC], 33, TitleXPt, "Ratio to published", "", 0, 0, 0, 1.5, 1.5, 2);
   histoRatioToPub->GetYaxis()->SetTitleSize(0.1);
   histoRatioToPub->GetYaxis()->SetTitleOffset(0.5);
   histoRatioToPub->GetYaxis()->SetLabelSize(0.07);
   histoRatioToPub->GetXaxis()->SetTitleSize(0.1);
   histoRatioToPub->GetXaxis()->SetTitleOffset(0.9);
   histoRatioToPub->GetXaxis()->SetLabelSize(0.07);
-  histoRatioToPub->GetYaxis()->SetRangeUser(0.2, 1.2);
-  histoRatioToPub->GetXaxis()->SetRangeUser(MinBinPt[part], 5);
-  histoRatioToPub->Draw("same");
-  TF1 *lineAt1 = new TF1("lineAt1", "1", MinBinPt[part], 5);
+  histoRatioToPub->GetYaxis()->SetRangeUser(0.4, 1.6);
+  histoRatioToPub->GetXaxis()->SetRangeUser(MinBinPt[part], 3);
+  histoRatioToPub->Draw("same ex0");
+  histoRatioToPubSyst->SetFillStyle(0);
+  histoRatioToPubSyst->Draw("same e2");
+  TF1 *lineAt1 = new TF1("lineAt1", "1", MinBinPt[part], 3);
   lineAt1->SetLineColor(1);
   lineAt1->SetLineWidth(1);
   lineAt1->SetLineStyle(7);

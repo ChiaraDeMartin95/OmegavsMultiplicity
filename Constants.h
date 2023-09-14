@@ -19,9 +19,9 @@ Float_t MinBinPt[numPart] = {0, 0, 0, 0.4, 0.4, 0.4, 0.8, 0.8, 0.8};
 Float_t MinBinPt900GeV[numPart] = {0, 0, 0, 0.4, 0.4, 0.4, 0.6, 0.6, 0.6};
 Float_t MaxBinPt[numPart] = {10, 10, 10, 8, 8, 8, 8, 8, 8};
 Float_t AdjustFactordNdeta = 1;
-//was 1.81
 Float_t MultiplicityPerc[numMult + 1] = {0, 1, 5, 10, 20, 30, 40, 50, 70, 100}; 
 Float_t MultiplicityPerc900GeV[numMult900GeV +1] = {0, 30, 100}; 
+
 //Float_t dNdEtaRun2[numMult] = {26.02, 20.02, 16.17, 13.77, 12.04, 11.5, 9.5, 8.5, 7, 6.32, 4.5, 2.55}; // 22o_pass4_medium_Train89684
 Float_t dNdEtaRun2[numMult] = {26.02, 20.02, 16.17, 12.6 /*average*/, 10.5 /*average*/, 7.75 /*average*/, 6.32, 4.5, 2.55};
 Float_t dNdEtaRun2MB = 6.94;
@@ -30,23 +30,27 @@ Float_t dNdEtaRun2MBErrorL = 0.08;
 Float_t dNdEtaRun2ErrorR[numMult] = {0.35, 0.27, 0.22, 0.18, 0.14, 0.11, 0.09, 0.07, 0.04}; // 22o_pass4_medium_Train89684
 Float_t dNdEtaRun2MBErrorR = 0.1;
 
-//Float_t dNdEtaRun3[numMult] = {31.5, 26.85, 23.15, 20.67, 18.81, 17.28, 15.98, 14.82, 13.78, 12.40, 10.13, 7.37}; // Nicolò values
-Float_t dNdEtaRun3[numMult] = {20.04, 17.23, 14.84, 12.50, 10.30, 8.62, 7.24, 5.58, 3.52}; // official values
-Float_t dNdEtaRun3MB = 7.08;
-Float_t dNdEtaRun3ErrorL[numMult] = {0.37, 0.22, 0.19, 0.16, 0.13, 0.11, 0.09, 0.07, 0.05}; // Run3 values
+Float_t dNdEtaRun3[numMult] = {16.61, 14.17, 12.21, 10.41, 8.78, 7.55, 6.54, 5.34, 3.89}; // Nicolò values
+Float_t dNdEtaRun3MB = 7.08; //official
+Float_t dNdEtaRun3ErrorL[numMult] = {0.24, 0.22, 0.19, 0.16, 0.13, 0.11, 0.09, 0.07, 0.05}; // Run3 values
 Float_t dNdEtaRun3MBErrorL = 0.09;
-Float_t dNdEtaRun3ErrorR[numMult] = {0.37, 0.22, 0.19, 0.16, 0.13, 0.11, 0.09, 0.07, 0.05}; // Run3 values
+Float_t dNdEtaRun3ErrorR[numMult] = {0.24, 0.22, 0.19, 0.16, 0.13, 0.11, 0.09, 0.07, 0.05}; // Run3 values
 Float_t dNdEtaRun3MBErrorR = 0.1;
+
+Float_t dNdEta900GeV[1] = {3.75}; //Run 1
+Float_t dNdEtaErrorL900GeV[1] = {0.05}; //Run 1
+Float_t dNdEtaErrorR900GeV[1] = {0.06}; //Run 1
 
 Int_t ColorMult[] = {634, 628, 807, kOrange - 4, 797, 815, 418, 429, 867, 856, 601, kViolet, kPink + 9, kPink + 1, 1};
 Float_t SizeMult[] = {2, 2, 2.8, 2.5, 2.8, 2, 2, 2.8, 2.5, 2.8, 2, 2, 2.8, 2.5, 2.8};
 Float_t SizeMultRatio[] = {1, 1, 1.8, 1.5, 1.8, 1, 1, 1.8, 1.5, 1.8, 1, 1, 1.8, 1.5, 1.8};
 Int_t MarkerMult[] = {20, 21, 33, 34, 29, 20, 21, 33, 34, 29, 20, 21, 33, 34, 29};
-Float_t ScaleFactor[] = {16384, 8192, 4096, 2048, 1024, 512, 256, 128, 64, 32, 16, 8, 4, 2, 1};
+//Float_t ScaleFactor[] = {16384, 8192, 4096, 2048, 1024, 512, 256, 128, 64, 32, 16, 8, 4, 2, 1};
+Float_t ScaleFactor[] = {256, 128, 64, 32, 16, 8, 4, 2, 1};
 Int_t ColorMB = 1;
 Float_t SizeMB = 2;
 Int_t MarkerMB = 24;
-Float_t ScaleFactorMB = pow(2, 19);
+Float_t ScaleFactorMB = pow(2, 12);
 
 Int_t Color[] = {634, 628, 797, 815, 418, 429, 867, 601, 1};
 Int_t ColorPt[] = {634, 628, 807, kOrange - 4, 797, 815, 418, 429, 867, 856, 601, kViolet, kPink + 9, kPink + 1, 1};

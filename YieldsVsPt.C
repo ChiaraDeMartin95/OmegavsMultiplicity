@@ -689,9 +689,9 @@ void YieldsVsPt(
       total[pt]->SetParName(5, "sigma2");
 
       cout << "\n\n fit gauss1 " << endl;
-      hInvMass[pt]->Fit(functionsFirst[pt], "RB");
+      hInvMass[pt]->Fit(functionsFirst[pt], "RBL");
       cout << "\n\n fit gauss2 " << endl;
-      hInvMass[pt]->Fit(functionsSecond[pt], "RB");
+      hInvMass[pt]->Fit(functionsSecond[pt], "RBL");
 
       bkg1[pt]->SetRange(bkgDisplayRangeLow[part], bkgDisplayRangeUp[part]);
       bkg2[pt]->SetRange(bkgDisplayRangeLow[part], bkgDisplayRangeUp[part]);
@@ -701,9 +701,9 @@ void YieldsVsPt(
 
       cout << "\n\n fit bkg " << endl;
       if (isBkgParab)
-        hInvMass[pt]->Fit(bkgparab[pt], "RB0");
+        hInvMass[pt]->Fit(bkgparab[pt], "RB0L");
       else
-        hInvMass[pt]->Fit(bkgretta[pt], "RB0");
+        hInvMass[pt]->Fit(bkgretta[pt], "RB0L");
 
       functionsFirst[pt]->GetParameters(&parTwoGaussParab[pt][0]);
       functionsFirst[pt]->GetParameters(&parTwoGaussRetta[pt][0]);
@@ -766,7 +766,7 @@ void YieldsVsPt(
         cout << "max value " << hInvMass[pt]->GetBinContent(hInvMass[pt]->GetMaximumBin()) << endl;
       }
 
-      fFitResultPtr0[pt] = hInvMass[pt]->Fit(total[pt], "SRB+"); // per errore gaussiana, S indica che il risultato del fit e' accessibile da fFitResultPtr0
+      fFitResultPtr0[pt] = hInvMass[pt]->Fit(total[pt], "SRBL+"); // per errore gaussiana, S indica che il risultato del fit e' accessibile da fFitResultPtr0
       // la gaussiana più larga deve esserte quella più bassa
       if (total[pt]->GetParameter(2) > total[pt]->GetParameter(5))
       {
@@ -861,7 +861,7 @@ void YieldsVsPt(
       total[pt]->SetParName(2, "sigma");
 
       cout << "\n\n fit gauss " << endl;
-      hInvMass[pt]->Fit(functionsFirst[pt], "RB");
+      hInvMass[pt]->Fit(functionsFirst[pt], "RBL");
 
       bkg1[pt]->SetRange(bkgDisplayRangeLow[part], bkgDisplayRangeUp[part]);
       bkg2[pt]->SetRange(bkgDisplayRangeLow[part], bkgDisplayRangeUp[part]);
@@ -871,9 +871,9 @@ void YieldsVsPt(
 
       cout << "\n\n fit bkg " << endl;
       if (isBkgParab)
-        hInvMass[pt]->Fit(bkgparab[pt], "RB0");
+        hInvMass[pt]->Fit(bkgparab[pt], "RBL0");
       else
-        hInvMass[pt]->Fit(bkgretta[pt], "RB0");
+        hInvMass[pt]->Fit(bkgretta[pt], "RBL0");
 
       functionsFirst[pt]->GetParameters(&parOneGaussParab[pt][0]);
       functionsFirst[pt]->GetParameters(&parOneGaussRetta[pt][0]);
@@ -920,7 +920,7 @@ void YieldsVsPt(
         }
       }
       cout << "max value " << hInvMass[pt]->GetBinContent(hInvMass[pt]->GetMaximumBin()) << endl;
-      fFitResultPtr0[pt] = hInvMass[pt]->Fit(total[pt], "SRB+"); // per errore gaussiana, S indica che il risultato del fit e' accessibile da fFitResultPtr0
+      fFitResultPtr0[pt] = hInvMass[pt]->Fit(total[pt], "SLRB+"); // per errore gaussiana, S indica che il risultato del fit e' accessibile da fFitResultPtr0
 
       totalbis[pt] = (TF1 *)total[pt]->Clone();
       fFitResultPtr1[pt] = fFitResultPtr0[pt];
@@ -1306,9 +1306,10 @@ void YieldsVsPt(
     Soutputfile += Form("_Mult%.1f-%.1f", MultiplicityPerc[mul], MultiplicityPerc[mul + 1]);
   if (isSysStudy)
     Soutputfile += SysPath;
-  // Soutputfile += "_Test";
+  //Soutputfile += "_LFit";
   Soutputfile += "_" + EventType[evFlag];
   Soutputfile += SSysSigExtr[SysSigExtr];
+  if (MultType==2)  Soutputfile += "_FV0Aclasses";
 
   // save canvases
   canvas[0]->SaveAs(Soutputfile + ".pdf(");

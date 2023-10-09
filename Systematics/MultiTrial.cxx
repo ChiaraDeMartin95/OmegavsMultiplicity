@@ -108,9 +108,6 @@ TH1F* makeSystPlotsV0s(int num = 1)
       hDev->SetBinContent(i, PassRogerBarlowCriterion(1, dev, err));
   }
 
-  hDev->GetYaxis()->SetRangeUser(0., 0.5);
-
-  //Return Max Dev Histo
   return hDev;
 
 }

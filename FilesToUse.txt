@@ -19,6 +19,7 @@ YieldsVsPt.C : fit to inv masses + spectra (saved in Yields directory)
 Takes in input the files in OutputFilesCascPPTask
 
 //OPTONAL MACROS TO PRODUCE PLOTS ------------
+
 PseudoEfficiency.C : compute PseudoEfficiency
 Takes in input files in Yields directory
 
@@ -31,6 +32,9 @@ Takes in input files in Yields directory
 MeanSigmaPurityMultRatio.C : compares mean values, sigmas, purity and raw yields vs multiplicity
 
 MeanSigmaPurityRunByRun.C : compares mean values, sigmas, purity and raw yields vs run number
+
+EfficiencyRatio.C : compare efficiency and signal loss obtained from different MCs
+
 //------------------
 
 YieldEffCorr.C : correct raw yields by efficiency and compare them with published ones

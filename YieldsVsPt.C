@@ -88,6 +88,33 @@ Double_t fparab(Double_t *x, Double_t *par)
   return par[0] + par[1] * x[0] + par[2] * x[0] * x[0];
 }
 
+Double_t fpol3(Double_t *x, Double_t *par)
+{
+  Float_t LimInf = 0;
+  Float_t LimSup = 0;
+  if (par[4] == 0)
+  {
+    LimInf = 0.474;
+    LimSup = 0.520;
+  }
+  else if (par[4] == 3 || par[4] == 4 || par[4] == 5)
+  {
+    LimInf = UpperLimitLSBXi; // 1.31
+    LimSup = LowerLimitRSBXi; // 1.335
+  }
+  else if (par[4] == 6 || par[4] == 7 || par[4] == 8)
+  {
+    LimInf = UpperLimitLSBOmega; // 1.66
+    LimSup = LowerLimitRSBOmega; // 1.692
+  }
+  if (reject && x[0] > LimInf && x[0] < LimSup)
+  {
+    TF1::RejectPoint();
+    return 0;
+  }
+  return par[0] + par[1] * x[0] + par[2] * x[0] * x[0] + par[3] * x[0] * x[0] * x[0];
+}
+
 Double_t fretta(Double_t *x, Double_t *par)
 {
   Float_t LimInf = 0;
@@ -153,7 +180,7 @@ void YieldsVsPt(
     TString SPathInEvt = "AnalysisResultsCascQATask/LHC22o_pass4_MinBias/AnalysisResultsEvts",
     TString OutputDir = "Yields",
     Bool_t UseTwoGauss = ExtrUseTwoGauss,
-    Bool_t isBkgParab = ExtrisBkgParab,
+    Int_t BkgType = ExtrBkgType,
     Bool_t isMeanFixedPDG = 0,
     Float_t sigmacentral = 4.2,
     Int_t evFlag = ExtrevFlag, // 0: INEL - 1; 1: INEL > 0; 2: INEL > 1,
@@ -164,7 +191,7 @@ void YieldsVsPt(
   if (part == 3 || part == 4 || part == 5)
     SysPath = ExtrSysPathXi;
   else if (part == 6 || part == 7 || part == 8)
-    SysPath = ExtrSysPathOmega;  
+    SysPath = ExtrSysPathOmega;
 
   Float_t UpperLimitLSB = 0;
   Float_t LowerLimitRSB = 0;
@@ -180,7 +207,7 @@ void YieldsVsPt(
   }
 
   if (SysSigExtr == 1)
-    isBkgParab = 0;
+    BkgType = 0;
 
   if (mul > numMult)
   {
@@ -519,14 +546,18 @@ void YieldsVsPt(
   TF1 **functions2 = new TF1 *[numPt];
   TF1 **bkg1 = new TF1 *[numPt];
   TF1 **bkg2 = new TF1 *[numPt];
+  TF1 **bkg3 = new TF1 *[numPt];
   TF1 **bkgretta = new TF1 *[numPt]; // initial bkg fit
   TF1 **bkgparab = new TF1 *[numPt]; // initial bkg fit
+  TF1 **bkgpol3 = new TF1 *[numPt];  // initial bkg fit
   TF1 **total = new TF1 *[numPt];
   TF1 **totalbis = new TF1 *[numPt];
 
   Double_t parTwoGaussParab[numPt + 1][9];
+  Double_t parTwoGaussPol3[numPt + 1][10];
   Double_t parTwoGaussRetta[numPt + 1][8];
   Double_t parOneGaussParab[numPt + 1][6];
+  Double_t parOneGaussPol3[numPt + 1][7];
   Double_t parOneGaussRetta[numPt + 1][5];
 
   TFitResultPtr fFitResultPtr0[numPt];
@@ -662,6 +693,10 @@ void YieldsVsPt(
     bkg2[pt]->SetLineColor(1);
     bkg2[pt]->SetLineStyle(2);
 
+    bkg3[pt] = new TF1(Form("bkg3%i", pt), "pol3", bkgDisplayRangeLow[part], bkgDisplayRangeUp[part]);
+    bkg3[pt]->SetLineColor(kOrange + 7);
+    bkg3[pt]->SetLineStyle(2);
+
     bkgretta[pt] = new TF1(Form("retta%i", pt), fretta, liminf[part], limsup[part], 3);
     bkgretta[pt]->SetLineColor(kGreen + 3);
     bkgretta[pt]->FixParameter(2, part);
@@ -670,16 +705,22 @@ void YieldsVsPt(
     bkgparab[pt]->SetLineColor(kAzure + 7);
     bkgparab[pt]->FixParameter(3, part);
 
+    bkgpol3[pt] = new TF1(Form("pol3%i", pt), fpol3, liminf[part], limsup[part], 5);
+    bkgpol3[pt]->SetLineColor(kRed + 7);
+    bkgpol3[pt]->FixParameter(4, part);
+
     Bool_t UseTwoGaussUpdated = 1;
     if (UseTwoGauss)
     {
       cout << "\n\e[35mFit with two gauss \e[39m"
            << " Pt: " << binpt[pt] << "-" << binpt[pt + 1] << endl;
 
-      if (isBkgParab)
-        total[pt] = new TF1(Form("total%i", pt), "gaus(0)+gaus(3)+pol2(6)", liminf[part], limsup[part]);
-      else
+      if (BkgType == 0)
         total[pt] = new TF1(Form("total%i", pt), "gaus(0)+gaus(3)+pol1(6)", liminf[part], limsup[part]);
+      else if (BkgType == 1)
+        total[pt] = new TF1(Form("total%i", pt), "gaus(0)+gaus(3)+pol2(6)", liminf[part], limsup[part]);
+      else if (BkgType == 2)
+        total[pt] = new TF1(Form("total%i", pt), "gaus(0)+gaus(3)+pol3(6)", liminf[part], limsup[part]);
       total[pt]->SetLineColor(597);
       total[pt]->SetParName(0, "norm");
       total[pt]->SetParName(1, "mean");
@@ -689,35 +730,44 @@ void YieldsVsPt(
       total[pt]->SetParName(5, "sigma2");
 
       cout << "\n\n fit gauss1 " << endl;
-      hInvMass[pt]->Fit(functionsFirst[pt], "RBL");
+      hInvMass[pt]->Fit(functionsFirst[pt], "RB");
       cout << "\n\n fit gauss2 " << endl;
-      hInvMass[pt]->Fit(functionsSecond[pt], "RBL");
+      hInvMass[pt]->Fit(functionsSecond[pt], "RB");
 
       bkg1[pt]->SetRange(bkgDisplayRangeLow[part], bkgDisplayRangeUp[part]);
       bkg2[pt]->SetRange(bkgDisplayRangeLow[part], bkgDisplayRangeUp[part]);
+      bkg3[pt]->SetRange(bkgDisplayRangeLow[part], bkgDisplayRangeUp[part]);
       bkgparab[pt]->SetRange(liminf[part], limsup[part]);
       bkgretta[pt]->SetRange(liminf[part], limsup[part]);
+      bkgpol3[pt]->SetRange(liminf[part], limsup[part]);
       total[pt]->SetRange(liminf[part], limsup[part]);
 
       cout << "\n\n fit bkg " << endl;
-      if (isBkgParab)
-        hInvMass[pt]->Fit(bkgparab[pt], "RB0L");
-      else
-        hInvMass[pt]->Fit(bkgretta[pt], "RB0L");
+      if (BkgType == 0)
+        hInvMass[pt]->Fit(bkgretta[pt], "RB0");
+      if (BkgType == 1)
+        hInvMass[pt]->Fit(bkgparab[pt], "RB0");
+      else if (BkgType == 2)
+        hInvMass[pt]->Fit(bkgpol3[pt], "RB");
 
       functionsFirst[pt]->GetParameters(&parTwoGaussParab[pt][0]);
       functionsFirst[pt]->GetParameters(&parTwoGaussRetta[pt][0]);
       functionsSecond[pt]->GetParameters(&parTwoGaussParab[pt][3]);
       functionsSecond[pt]->GetParameters(&parTwoGaussRetta[pt][3]);
-      if (isBkgParab)
+      if (BkgType == 0)
+      {
+        bkgretta[pt]->GetParameters(&parTwoGaussRetta[pt][6]);
+        total[pt]->SetParameters(parTwoGaussRetta[pt]);
+      }
+      if (BkgType == 1)
       {
         bkgparab[pt]->GetParameters(&parTwoGaussParab[pt][6]);
         total[pt]->SetParameters(parTwoGaussParab[pt]);
       }
       else
       {
-        bkgretta[pt]->GetParameters(&parTwoGaussRetta[pt][6]);
-        total[pt]->SetParameters(parTwoGaussRetta[pt]);
+        bkgpol3[pt]->GetParameters(&parTwoGaussPol3[pt][6]);
+        total[pt]->SetParameters(parTwoGaussPol3[pt]);
       }
 
       cout << "\n\n fit total " << endl;
@@ -766,7 +816,7 @@ void YieldsVsPt(
         cout << "max value " << hInvMass[pt]->GetBinContent(hInvMass[pt]->GetMaximumBin()) << endl;
       }
 
-      fFitResultPtr0[pt] = hInvMass[pt]->Fit(total[pt], "SRBL+"); // per errore gaussiana, S indica che il risultato del fit e' accessibile da fFitResultPtr0
+      fFitResultPtr0[pt] = hInvMass[pt]->Fit(total[pt], "SRB+"); // per errore gaussiana, S indica che il risultato del fit e' accessibile da fFitResultPtr0
       // la gaussiana più larga deve esserte quella più bassa
       if (total[pt]->GetParameter(2) > total[pt]->GetParameter(5))
       {
@@ -798,7 +848,12 @@ void YieldsVsPt(
       totalbis[pt]->FixParameter(4, 0);
       totalbis[pt]->FixParameter(5, 0);
 
-      if (isBkgParab)
+      if (BkgType == 0)
+      {
+        bkg1[pt]->FixParameter(0, total[pt]->GetParameter(6));
+        bkg1[pt]->FixParameter(1, total[pt]->GetParameter(7));
+      }
+      else if (BkgType == 1)
       {
         bkg2[pt]->FixParameter(0, total[pt]->GetParameter(6));
         bkg2[pt]->FixParameter(1, total[pt]->GetParameter(7));
@@ -806,8 +861,10 @@ void YieldsVsPt(
       }
       else
       {
-        bkg1[pt]->FixParameter(0, total[pt]->GetParameter(6));
-        bkg1[pt]->FixParameter(1, total[pt]->GetParameter(7));
+        bkg3[pt]->FixParameter(0, total[pt]->GetParameter(6));
+        bkg3[pt]->FixParameter(1, total[pt]->GetParameter(7));
+        bkg3[pt]->FixParameter(2, total[pt]->GetParameter(8));
+        bkg3[pt]->FixParameter(3, total[pt]->GetParameter(9));
       }
 
       if (UseTwoGaussUpdated)
@@ -825,10 +882,12 @@ void YieldsVsPt(
         hInvMass[pt]->Draw("same e");
         functions1[pt]->Draw("same");
         functions2[pt]->Draw("same");
-        if (isBkgParab)
+        if (BkgType == 0)
+          bkg1[pt]->Draw("same");
+        else if (BkgType == 1)
           bkg2[pt]->Draw("same");
         else
-          bkg1[pt]->Draw("same");
+          bkg3[pt]->Draw("same");
 
         TMatrixDSym cov = fFitResultPtr0[pt]->GetCovarianceMatrix();
         Double_t cov_mean = cov[1][4];
@@ -851,41 +910,52 @@ void YieldsVsPt(
       cout << "\n\e[36mFit with one gauss only: \e[39m"
            << " Pt: " << binpt[pt] << "-" << binpt[pt + 1] << endl;
 
-      if (isBkgParab)
+      if (BkgType == 0)
+        total[pt] = new TF1(Form("total%i", pt), "gaus(0)+pol1(3)", liminf[part], limsup[part]);
+      if (BkgType == 1)
         total[pt] = new TF1(Form("total%i", pt), "gaus(0)+pol2(3)", liminf[part], limsup[part]);
       else
-        total[pt] = new TF1(Form("total%i", pt), "gaus(0)+pol1(3)", liminf[part], limsup[part]);
+        total[pt] = new TF1(Form("total%i", pt), "gaus(0)+pol3(3)", liminf[part], limsup[part]);
       total[pt]->SetLineColor(7);
       total[pt]->SetParName(0, "norm");
       total[pt]->SetParName(1, "mean");
       total[pt]->SetParName(2, "sigma");
 
       cout << "\n\n fit gauss " << endl;
-      hInvMass[pt]->Fit(functionsFirst[pt], "RBL");
+      hInvMass[pt]->Fit(functionsFirst[pt], "RB");
 
       bkg1[pt]->SetRange(bkgDisplayRangeLow[part], bkgDisplayRangeUp[part]);
       bkg2[pt]->SetRange(bkgDisplayRangeLow[part], bkgDisplayRangeUp[part]);
+      bkg3[pt]->SetRange(bkgDisplayRangeLow[part], bkgDisplayRangeUp[part]);
       bkgparab[pt]->SetRange(liminf[part], limsup[part]);
       bkgretta[pt]->SetRange(liminf[part], limsup[part]);
+      bkgpol3[pt]->SetRange(liminf[part], limsup[part]);
       total[pt]->SetRange(liminf[part], limsup[part]);
 
       cout << "\n\n fit bkg " << endl;
-      if (isBkgParab)
-        hInvMass[pt]->Fit(bkgparab[pt], "RBL0");
+      if (BkgType == 0)
+        hInvMass[pt]->Fit(bkgretta[pt], "RB0");
+      if (BkgType == 1)
+        hInvMass[pt]->Fit(bkgparab[pt], "RB0");
       else
-        hInvMass[pt]->Fit(bkgretta[pt], "RBL0");
+        hInvMass[pt]->Fit(bkgpol3[pt], "RB0");
 
       functionsFirst[pt]->GetParameters(&parOneGaussParab[pt][0]);
       functionsFirst[pt]->GetParameters(&parOneGaussRetta[pt][0]);
-      if (isBkgParab)
+      if (BkgType == 0)
+      {
+        bkgretta[pt]->GetParameters(&parOneGaussRetta[pt][3]);
+        total[pt]->SetParameters(parOneGaussRetta[pt]);
+      }
+      if (BkgType == 1)
       {
         bkgparab[pt]->GetParameters(&parOneGaussParab[pt][3]);
         total[pt]->SetParameters(parOneGaussParab[pt]);
       }
       else
       {
-        bkgretta[pt]->GetParameters(&parOneGaussRetta[pt][3]);
-        total[pt]->SetParameters(parOneGaussRetta[pt]);
+        bkgretta[pt]->GetParameters(&parOneGaussPol3[pt][3]);
+        total[pt]->SetParameters(parOneGaussPol3[pt]);
       }
 
       cout << "\n\n fit total " << endl;
@@ -920,7 +990,7 @@ void YieldsVsPt(
         }
       }
       cout << "max value " << hInvMass[pt]->GetBinContent(hInvMass[pt]->GetMaximumBin()) << endl;
-      fFitResultPtr0[pt] = hInvMass[pt]->Fit(total[pt], "SLRB+"); // per errore gaussiana, S indica che il risultato del fit e' accessibile da fFitResultPtr0
+      fFitResultPtr0[pt] = hInvMass[pt]->Fit(total[pt], "SRB+"); // per errore gaussiana, S indica che il risultato del fit e' accessibile da fFitResultPtr0
 
       totalbis[pt] = (TF1 *)total[pt]->Clone();
       fFitResultPtr1[pt] = fFitResultPtr0[pt];
@@ -933,7 +1003,12 @@ void YieldsVsPt(
       totalbis[pt]->FixParameter(1, 0);
       totalbis[pt]->FixParameter(2, 0);
 
-      if (isBkgParab)
+      if (BkgType == 0)
+      {
+        bkg1[pt]->FixParameter(0, total[pt]->GetParameter(3));
+        bkg1[pt]->FixParameter(1, total[pt]->GetParameter(4));
+      }
+      else if (BkgType == 1)
       {
         bkg2[pt]->FixParameter(0, total[pt]->GetParameter(3));
         bkg2[pt]->FixParameter(1, total[pt]->GetParameter(4));
@@ -941,8 +1016,10 @@ void YieldsVsPt(
       }
       else
       {
-        bkg1[pt]->FixParameter(0, total[pt]->GetParameter(3));
-        bkg1[pt]->FixParameter(1, total[pt]->GetParameter(4));
+        bkg3[pt]->FixParameter(0, total[pt]->GetParameter(3));
+        bkg3[pt]->FixParameter(1, total[pt]->GetParameter(4));
+        bkg3[pt]->FixParameter(2, total[pt]->GetParameter(5));
+        bkg3[pt]->FixParameter(3, total[pt]->GetParameter(6));
       }
       if (pt < 9)
         canvas[0]->cd(pt + 1);
@@ -955,13 +1032,13 @@ void YieldsVsPt(
       hInvMass[pt]->GetXaxis()->SetRangeUser(histoMassRangeLow[part], histoMassRangeUp[part]);
       hInvMass[pt]->Draw("same e");
 
-/*
-      if (isBkgParab)
-        bkg2[pt]->Draw("same");
-      else
-        bkg1[pt]->Draw("same");
-      functions1[pt]->Draw("same");
-*/
+      /*
+            if (BkgType == 1)
+              bkg2[pt]->Draw("same");
+            else
+              bkg1[pt]->Draw("same");
+            functions1[pt]->Draw("same");
+      */
       mean[pt] = total[pt]->GetParameter(1);
       errmean[pt] = total[pt]->GetParError(1);
       sigma[pt] = total[pt]->GetParameter(2);
@@ -989,22 +1066,22 @@ void YieldsVsPt(
     lineBkgLimitB[pt]->SetLineColor(kViolet + 1);
     lineBkgLimitC[pt]->SetLineColor(kViolet + 1);
     lineBkgLimitD[pt]->SetLineColor(kViolet + 1);
-    //lineBkgLimitA[pt]->Draw("same");
-    //lineBkgLimitB[pt]->Draw("same");
-    //lineBkgLimitC[pt]->Draw("same");
-    //lineBkgLimitD[pt]->Draw("same");
+    lineBkgLimitA[pt]->Draw("same");
+    lineBkgLimitB[pt]->Draw("same");
+    lineBkgLimitC[pt]->Draw("same");
+    lineBkgLimitD[pt]->Draw("same");
 
     // linebkgFitLL->Draw("same");
     // linebkgFitRR->Draw("same");
     // linebkgFitLR->Draw("same");
     // linebkgFitRL->Draw("same");
 
-/*
-    if (isBkgParab)
-      bkgparab[pt]->Draw("same");
-    else
-      bkgretta[pt]->Draw("same");
-*/
+    /*
+        if (BkgType == 1)
+          bkgparab[pt]->Draw("same");
+        else
+          bkgretta[pt]->Draw("same");
+    */
     if (pt < 9)
       canvas[0]->cd(pt + 1);
     else if (pt < 18)
@@ -1024,7 +1101,13 @@ void YieldsVsPt(
 
     b[pt] = 0;
     errb[pt] = 0;
-    if (isBkgParab)
+    if (BkgType == 0)
+    {
+      b[pt] = bkg1[pt]->Integral(LowLimit[pt], UpLimit[pt]);
+      errb[pt] = totalbis[pt]->IntegralError(LowLimit[pt], UpLimit[pt], fFitResultPtr1[pt]->GetParams(),
+                                             (fFitResultPtr1[pt]->GetCovarianceMatrix()).GetMatrixArray());
+    }
+    if (BkgType == 1)
     {
       b[pt] = bkg2[pt]->Integral(LowLimit[pt], UpLimit[pt]);
       errb[pt] = totalbis[pt]->IntegralError(LowLimit[pt], UpLimit[pt], fFitResultPtr1[pt]->GetParams(),
@@ -1032,7 +1115,7 @@ void YieldsVsPt(
     }
     else
     {
-      b[pt] = bkg1[pt]->Integral(LowLimit[pt], UpLimit[pt]);
+      b[pt] = bkg3[pt]->Integral(LowLimit[pt], UpLimit[pt]);
       errb[pt] = totalbis[pt]->IntegralError(LowLimit[pt], UpLimit[pt], fFitResultPtr1[pt]->GetParams(),
                                              (fFitResultPtr1[pt]->GetCovarianceMatrix()).GetMatrixArray());
     }
@@ -1076,7 +1159,13 @@ void YieldsVsPt(
       {
         SignalTest[pt] += hInvMass[pt]->GetBinContent(l);
       }
-      if (isBkgParab)
+      if (BkgType == 0)
+      {
+        bTest[pt] = bkg1[pt]->Integral(LowLimitTest[pt], UpLimitTest[pt]);
+        errbTest[pt] = totalbis[pt]->IntegralError(LowLimitTest[pt], UpLimitTest[pt], fFitResultPtr1[pt]->GetParams(),
+                                                   (fFitResultPtr1[pt]->GetCovarianceMatrix()).GetMatrixArray());
+      }
+      if (BkgType == 1)
       {
         bTest[pt] = bkg2[pt]->Integral(LowLimitTest[pt], UpLimitTest[pt]);
         errbTest[pt] = totalbis[pt]->IntegralError(LowLimitTest[pt], UpLimitTest[pt], fFitResultPtr1[pt]->GetParams(),
@@ -1084,7 +1173,7 @@ void YieldsVsPt(
       }
       else
       {
-        bTest[pt] = bkg1[pt]->Integral(LowLimitTest[pt], UpLimitTest[pt]);
+        bTest[pt] = bkg3[pt]->Integral(LowLimitTest[pt], UpLimitTest[pt]);
         errbTest[pt] = totalbis[pt]->IntegralError(LowLimitTest[pt], UpLimitTest[pt], fFitResultPtr1[pt]->GetParams(),
                                                    (fFitResultPtr1[pt]->GetCovarianceMatrix()).GetMatrixArray());
       }
@@ -1288,10 +1377,12 @@ void YieldsVsPt(
     bkg2[pt]->SetLineStyle(2);
     bkg1[pt]->SetLineColor(1);
     bkg1[pt]->SetLineStyle(2);
-    if (isBkgParab)
+    if (BkgType == 0)
+      bkg1[pt]->Draw("same");
+    else if (BkgType == 1)
       bkg2[pt]->Draw("same");
     else
-      bkg1[pt]->Draw("same");
+      bkg3[pt]->Draw("same");
     lineP3Sigma[pt]->Draw("same");
     lineM3Sigma[pt]->Draw("same");
   }
@@ -1299,24 +1390,25 @@ void YieldsVsPt(
   TString Soutputfile;
   Soutputfile = OutputDir + "/Yields_" + Spart[part] + "_" + year;
   Soutputfile += IsOneOrTwoGauss[UseTwoGauss];
-  Soutputfile += SIsBkgParab[isBkgParab];
+  Soutputfile += SIsBkgParab[BkgType];
   if (isMB)
     Soutputfile += "_Mult0-100";
   else
     Soutputfile += Form("_Mult%.1f-%.1f", MultiplicityPerc[mul], MultiplicityPerc[mul + 1]);
   if (isSysStudy)
     Soutputfile += SysPath;
-  //Soutputfile += "_LFit";
+  // Soutputfile += "_LFit";
   Soutputfile += "_" + EventType[evFlag];
   Soutputfile += SSysSigExtr[SysSigExtr];
-  if (MultType==2)  Soutputfile += "_FV0Aclasses";
+  if (MultType == 2)
+    Soutputfile += "_FV0Aclasses";
 
   // save canvases
   canvas[0]->SaveAs(Soutputfile + ".pdf(");
   canvas[1]->SaveAs(Soutputfile + ".pdf");
-  canvas[2]->Close();
+  // canvas[2]->Close();
   canvas[3]->Close();
-  // canvas[2]->SaveAs(Soutputfile + ".pdf");
+  canvas[2]->SaveAs(Soutputfile + ".pdf");
   // canvas[3]->SaveAs(Soutputfile + ".pdf");
   canvasYield->SaveAs(Soutputfile + ".pdf");
   canvasSummary->SaveAs(Soutputfile + ".pdf");
